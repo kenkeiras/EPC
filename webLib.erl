@@ -4,33 +4,17 @@
 %% @author Iago Lastra Rodriguez <iago.lastra@gmail.com>
 
 -module(webLib).
--export([getBody/1, parse/1]).
+-export([getHeaderTags/1]).
 
 -include_lib("xmerl/include/xmerl.hrl"). 
 
-getBody(URL) ->
+%Retunrs title if url = "http://www.youtube.com"
+getHeaderTags(URL) ->
 	inets:start(),
-	{Status,{Response,Headers,Body}} = httpc:request("http://www.google.com"),
-	Body.
+	{_, { _, _, Data}} = httpc:request(URL),
+	L = element(3,mochiweb_html:parse(Data)),
+	H = lists:nth(1,L),
+	E3 = element(3,H),
+	lists:nth(6,E3).
 
 
-parse(Body) ->
-	Test = "
-		<Bookstore>
-		  <Book>
-		    <ISBN>9781401309657</ISBN>
-		    <Name>The Last Letcture</Name>
-		    <Author>Randy Pausch</Author>
-		  </Book>
-		</Bookstore>",
-
-	{Xml, _} = xmerl_scan:string(Test),
-    [val(xmerl_xpath:string("//ISBN", Xml)),
-     val(xmerl_xpath:string("//Name", Xml)),
-     val(xmerl_xpath:string("//Author", Xml))
-    ].
-
-
-val(X) ->
-    [#xmlElement{ name = Name, content=[#xmlText{value=Value} | _ ]}] = X,
-    {N, V}.
