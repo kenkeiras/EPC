@@ -3,15 +3,15 @@
 %%% @end
 
 -module(indexer).
--export([indexImage/1]).
+-export([indexImage/1, start/0]).
 
--on_load(on_load/0).
--export([pHash/0]).
+-export([pHash/0, indexer/0]).
 
 
 % Machine endianness
 -define(ENDIANNESS, little).
 
+%%% Indexer service implementation
 %% Extract image feature
 extractPerception(ImageData) ->
     phash ! {self(), {call, ImageData}},
@@ -28,12 +28,29 @@ addToIndex(ImageUrl, Perception) ->
 
 %% Main function
 indexImage(ImageUrl) ->
-    {ok, AnswerData} = httpc:request(ImageUrl),
-    {_ReturnedCode, _ReturnedHeaders, ImageData} = AnswerData,
-    Perception = extractPerception(ImageData),
-    addToIndex(ImageUrl, Perception).
+    indexer ! {self(), {index, ImageUrl}}.
 
-%% pHash port
+
+%% indexing loop
+indexer_loop() ->
+    receive
+        {_From, {index, ImageUrl}} ->
+            {ok, AnswerData} = httpc:request(ImageUrl),
+            {_ReturnedCode, _ReturnedHeaders, ImageData} = AnswerData,
+            Perception = extractPerception(ImageData),
+            addToIndex(ImageUrl, Perception),
+            indexer_loop()
+    end.
+
+
+%% indexer service
+indexer() ->
+    register(indexer, self()),
+    indexer_loop().
+
+
+%%% pHash port implementation
+%% pHash port registration
 pHash() ->
     register(phash, self()),
     process_flag(trap_exit, true),
@@ -80,9 +97,11 @@ portLoop(Port) ->
 
 
 %% Executes on module load, initializes the needed structures
-on_load() ->
+start() ->
     % Inets required for HTTP client requests
     inets:start(),
     % pHash port
     spawn(?MODULE, pHash, []),
+    % indexer service
+    spawn(?MODULE, indexer, []),
     ok.
