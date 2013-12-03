@@ -19,7 +19,7 @@ extractPerception(ImageData) ->
 
 %% Add image url and perception to index database
 addToIndex(ImageUrl, Perception) ->
-    io:format("[~p] ~p~n", [Perception, ImageUrl]).
+    epc_dba:put_im(ImageUrl, Perception).
 
 
 %% Main function
