@@ -15,13 +15,17 @@
 %% Extract image feature
 %% Dummy implementation
 extractPerception(ImageData) ->
-    ImageData.
+    phash ! {self(), {call, ImageData}},
+    receive
+        {phash, Perception} ->
+            Perception
+    end.
 
 
 %% Add image url and perception to index database
 %% Dummy implementation
 addToIndex(ImageUrl, Perception) ->
-    io:format("[~p bytes] ~p~n", [length(Perception), ImageUrl]).
+    io:format("[~p] ~p~n", [Perception, ImageUrl]).
 
 
 %% Main function

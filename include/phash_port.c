@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <unistd.h>
+#include <assert.h>
+#include "pHash.h"
 
 #define EXIT_VALUE (0xFFFFFFFFFFFFFFFF)
 
@@ -23,7 +26,7 @@ uint64_t read_length(FILE *f){
  *
  */
 void read_data(uint8_t data[], uint64_t length, FILE *f){
-    int already_read = 0;
+    unsigned int already_read = 0;
     while (already_read < length){
         int read_step = fread(&data[already_read], sizeof(uint8_t),
                               length - already_read, f);
@@ -45,11 +48,29 @@ void write_phash(uint64_t phash, FILE *f){
 
 /**
  * Call the pHash library.
- * @ TODO Write the actual binding
  *
  */
 uint64_t compute_phash(uint8_t data[], uint64_t length){
-    return 0x0000000000000090;
+    ulong64 hash = 144;
+    /* To be called from mkstemp, keep the last 6 characters as X's ! */
+    char fname[] = {"tmp_epc_phash_XXXXXX"};
+    int fd = mkstemp(fname);
+    assert(fd != -1);
+
+    /* Write the data to a file, the library operates over them :\ */
+    unsigned int already_wrote = 0;
+    while(already_wrote < length){
+        unsigned int write_step = write(fd, &data[already_wrote],
+                                        length - already_wrote);
+
+        already_wrote += write_step;
+    }
+    close(fd);
+
+    ph_dct_imagehash(fname, hash);
+
+    unlink(fname);
+    return hash;
 }
 
 
