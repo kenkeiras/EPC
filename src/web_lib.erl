@@ -10,7 +10,7 @@
 -include_lib("xmerl/include/xmerl.hrl"). 
  
 %% @doc Returns a list of tuples containin links and images.
-%%      Example url = "http://www.youtube.com"
+%%      Example url = "http://www.youtube.com/{relative}"
 %% @spec get_data(URL :: string()) -> {Links :: string(), Images :: string()}
 get_data(URL) ->
     inets:start(),
@@ -20,7 +20,7 @@ get_data(URL) ->
     Images = crawl_for(<<"img">>, ParsedData, []),
     LinkURLs = filter_second_by(<<"href">>, Links),
     ImageURLs = filter_second_by(<<"src">>, Images),
-    {LinkURLs, ImageURLs}.
+    {relative_to_abs(LinkURLs, URL), relative_to_abs(ImageURLs, URL)}.
  
 %% @doc Internal utility function
 crawl_for(Tag, {Tag, Properties, Children}, List) ->
@@ -34,3 +34,18 @@ crawl_for(_Tag, _DifferentElement, List) ->
 %% @doc Internal utility function
 filter_second_by(Tag, List) ->
     [ Second || {First, Second} <- List, First == Tag ].
+
+
+% @doc gets a binary link and if starts with slash, appends Base url
+add_domain(RelativeUrl, BaseUrl) ->
+    Link =  binary:bin_to_list(RelativeUrl),
+    case lists:nth(1, Link) of
+        $/ -> BaseUrl ++ Link;      %Starts with slash
+        CompleteUrl -> CompleteUrl  %Is a complete url.
+    end
+    .
+
+%% @doc transforms relative links into absolute links
+relative_to_abs(LinkUrls, URL) ->
+    [add_domain(CurrentURL, URL) || CurrentURL <- LinkUrls].
+
