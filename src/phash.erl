@@ -52,7 +52,7 @@ encode(Msg) ->
 
 %% pHash port decoder
 decode(Data) ->
-     binary:decode_unsigned(binary:list_to_bin(Data), ?ENDIANNESS).
+     Data.
 
 
 %% pHash port controller loop
