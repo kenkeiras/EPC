@@ -1,8 +1,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 
+%
 % master:init().
-% master:getImages(URLs). 
-% 
+% master:getImages(URLs).
+%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -module(master).
@@ -28,24 +28,24 @@ init() ->
 	process_flag(trap_exit, true),
 	PID = spawn(master, loop, [[], [], [], 0]),
 	register(master, PID).
-    
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Debug utilities
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-printPendingURLs() -> 
+printPendingURLs() ->
 	master ! printPendingURLs.
-	
-printProcessedURLs() -> 
+
+printProcessedURLs() ->
 	master ! printProcessedURLs.
-	
-printSlaves() -> 
+
+printSlaves() ->
 	master ! printSlaves.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Tells the master to enqueue new URLs.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 getImages(URLs) ->
-	master ! {getImages, URLs}. 
+	master ! {getImages, URLs}.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -53,19 +53,26 @@ getImages(URLs) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 removeDuplicatedURLs(URLsToAdd, ProcessedURLs) ->
 	[URL || URL <- URLsToAdd, not lists:any(fun(ProcessedURL) -> ProcessedURL == URL end, ProcessedURLs)].
-	
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Removes trailing slashes from URLs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 removeTrailingSlash(L) ->
 	removeTrailingSlash(L, []).
 removeTrailingSlash([W | T], Result) ->
-	case lists:last(W) of 
-		$/ -> removeTrailingSlash(T, [lists:sublist(W, length(W) - 1) | Result]);
-		_ -> removeTrailingSlash(T, [W | Result])
-		end;
+        case W of
+            [] ->
+                removeTrailingSlash(T, Result);
+            _-> removeTrailingSlash(T, [W | Result])
+           % _ ->
+           %    case lists:last(W) of
+           %         $/ -> removeTrailingSlash(T, [lists:sublist(W, length(W) - 1) | Result]);
+           %         _ -> removeTrailingSlash(T, [W | Result])
+		%end
+        end;
 removeTrailingSlash([], Result) ->
-	Result.
+    Result.
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -73,13 +80,13 @@ removeTrailingSlash([], Result) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 assignURLs([], ProcessedURLs, Slaves, _) -> % No new URLs to assign
 	{[], ProcessedURLs, Slaves};
-	
+
 assignURLs(PendingURLs, ProcessedURLs, Slaves, 0) -> % No Slave slots
 	{PendingURLs, ProcessedURLs, Slaves};
-	
+
 assignURLs([URL | T], ProcessedURLs, Slaves, SlaveSlots) ->
-	SlaveMock = spawn(slaveMock, init, [self(), URL]),
-	assignURLs(T, [URL | ProcessedURLs], [SlaveMock | Slaves], SlaveSlots - 1).
+	Slave = spawn(epc_slave, init, [ URL]),
+	assignURLs(T, [URL | ProcessedURLs], [Slave | Slaves], SlaveSlots - 1).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -87,14 +94,14 @@ assignURLs([URL | T], ProcessedURLs, Slaves, SlaveSlots) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 trim(URLs, Count) when Count =< ?PENDING_URLS_LIMIT ->
 	URLs;
-	
+
 trim(URLs, _) ->
 	lists:sublist(URLs, 1, ?PENDING_URLS_LIMIT).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Pritns list
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-printList([]) -> 
+printList([]) ->
 	io:fwrite("End of list~n", []);
 printList([H | T]) ->
 	io:fwrite("~s~n", [H]),
@@ -118,7 +125,7 @@ checkMessages(PendingURLs, ProcessedURLs, Slaves, SlaveCount) ->
             printList(Slaves),
             loop(PendingURLs, ProcessedURLs, Slaves, SlaveCount);
         % Client messages
-        {foundURLs, Slave, {CrawledURLs, NewUrls}} -> 
+        {foundURLs, Slave, {CrawledURLs, NewUrls}} ->
         CrawledURLs_s = removeTrailingSlash(CrawledURLs),
         NewUrls_s = removeTrailingSlash(NewUrls),
         CurrentSlaves = lists:delete(Slave, Slaves),
@@ -145,9 +152,6 @@ checkMessages(PendingURLs, ProcessedURLs, Slaves, SlaveCount) ->
 loop(PendingURLs, ProcessedURLs, Slaves, SlaveCount) when SlaveCount < ?SLAVE_LIMIT ->
 	{RemainingURLs, CurrentProcessedURLs, CurrentSlaves} = assignURLs(PendingURLs, ProcessedURLs, Slaves, ?SLAVE_LIMIT - SlaveCount),
 	checkMessages(RemainingURLs, CurrentProcessedURLs, CurrentSlaves, length(CurrentSlaves));
-	
+
 loop(PendingURLs, ProcessedURLs, Slaves, SlaveCount) ->
 	checkMessages(PendingURLs, ProcessedURLs, Slaves, SlaveCount).
-		
-    
-
