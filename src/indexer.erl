@@ -8,7 +8,7 @@
 -export([indexer/0]).
 
 %%% Indexer service implementation
-%% Extract image feature
+%% Extract image featureç
 extractPerception(ImageData) ->
     phash ! {self(), {call, ImageData}},
     receive
@@ -30,7 +30,7 @@ indexImage(ImageUrl) ->
 %% indexing loop
 indexer_loop() ->
     receive
-        {_From, {index, ImageUrl}} ->
+        {_From, {index, [ImageUrl]}} ->
             {ok, AnswerData} = httpc:request(ImageUrl),
             {_ReturnedCode, _ReturnedHeaders, ImageData} = AnswerData,
             Perception = extractPerception(ImageData),
