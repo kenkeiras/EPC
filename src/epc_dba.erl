@@ -1,5 +1,5 @@
 -module(epc_dba).
--export([test/0, install/1, uninstall/1, start/1, stop/1, put_im/2, get_im/1, get_by_hash/1, get_by_simhash/2]).
+-export([test/0, install/1, uninstall/1, start/1, stop/1, put_im/2, get_im/1, get_by_hash/1, get_by_simhash/2, clear/0]).
 
 -record(epc_images, {url,hash0,hash1,hash2,hash3,hash4,hash5,hash6,hash7}).
 
@@ -82,6 +82,10 @@ get_by_simhash([Hash0,Hash1,Hash2,Hash3,Hash4,Hash5,Hash6,Hash7], Threshold) ->
 			}}, 
 			Threshold}],
 		[{{'$8', '$0', '$1', '$2', '$3', '$4', '$5', '$6', '$7'}}]}]) end).
+
+
+clear() ->
+	mnesia:clear_table(epc_images).
 
 
 test() ->
