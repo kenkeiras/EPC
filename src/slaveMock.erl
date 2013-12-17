@@ -22,7 +22,7 @@ randomString(Length, AllowedChars) ->
 
 
 returnFoundURLs(Master, FoundURLs) ->
-	Master ! {foundURLs, self(), FoundURLs}.
+	Master ! {foundURLs, self(), {FoundURLs, []}}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Init
