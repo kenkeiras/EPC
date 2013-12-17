@@ -36,12 +36,36 @@ filter_second_by(Tag, List) ->
     [ Second || {First, Second} <- List, First == Tag ].
 
 
+get_domain(Url) ->
+    {_ , NS} = lists:splitwith(fun (X) -> X /= $: end, Url),
+    {_, ADom} = lists:splitwith(fun (X) -> (X == $/) or (X == $:) end, NS),
+    {Domain, _} = lists:splitwith(fun (X) -> X /= $/ end, ADom),
+    Domain.
+
 % @doc gets a binary link and if starts with slash, appends Base url
 add_domain(RelativeUrl, BaseUrl) ->
     Link =  binary:bin_to_list(RelativeUrl),
-    case lists:nth(1, Link) of
-        $/ -> BaseUrl ++ Link;      %Starts with slash
-        CompleteUrl -> CompleteUrl  %Is a complete url.
+    AbsolutaDelTo = lists:any(fun (X) -> X == $: end, Link),
+    DomainAbsolute = lists:nth(1, Link) == $/,
+    if AbsolutaDelTo == true ->
+            Schemeless = lists:nth(1, Link) == $:,
+            if Schemeless ->
+                    {Scheme, _} = lists:splitwith(fun (X) -> X /= $: end,
+                                                  BaseUrl),
+                    Scheme ++ Link;
+               true ->
+                    Link  %Is a complete url
+            end;
+       DomainAbsolute ->
+            {Scheme, _} = lists:splitwith(fun (X) -> X /= $: end,
+                                          BaseUrl),
+            Scheme ++ "://" ++ get_domain(BaseUrl) ++ Link; %Starts with slash
+       true ->
+            {_, S} = lists:splitwith(fun (X) -> X /= $/ end,
+                                lists:reverse(BaseUrl)),
+
+            lists:reverse(S) ++ Link
+
     end
     .
 
