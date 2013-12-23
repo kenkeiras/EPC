@@ -9,7 +9,10 @@
 
 % Machine endianness
 -define(ENDIANNESS, little).
-
+-define(PHASH_BINARY_DIRECTORY, "priv").
+-define(PHASH_BINARY_FILE_NAME, "phash_port").
+-define(PHASH_BINARY_PATH, filename:join(?PHASH_BINARY_DIRECTORY,
+                                         ?PHASH_BINARY_FILE_NAME)).
 
 %%% pHash port implementation
 %% Extract perception hash from the given image file data
@@ -26,7 +29,7 @@ hash(ImageData) ->
 pHash() ->
     register(phash, self()),
     process_flag(trap_exit, true),
-    Port = open_port({spawn, "./phash_port"}, [stream]),
+    Port = open_port({spawn, ?PHASH_BINARY_PATH}, [stream]),
     portLoop(Port).
 
 
