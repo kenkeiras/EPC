@@ -31,6 +31,7 @@ indexImage(ImageUrl) ->
 indexer_loop() ->
     receive
         {_From, {index, [ImageUrl]}} ->
+	    io:format("Indexer: ~p~n", [ImageUrl]),
             {ok, AnswerData} = httpc:request(ImageUrl),
             {_ReturnedCode, _ReturnedHeaders, ImageData} = AnswerData,
             Perception = extractPerception(ImageData),
