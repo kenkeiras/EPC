@@ -1,7 +1,9 @@
 -module(epc_slave).
 -export([init/1]).
 
-init(Url) ->
+-define(MAX_PAGES_DOMAIN, 20).
+
+init(Url) ->    
     crawl(Url),
     ok.
 
@@ -15,11 +17,11 @@ getLinks(URL) ->
 
 
 crawl(Url)->
-    {CrawledUrls, OtherDomainUrls, ImageLinks} = crawl(Url,[],[],[],[]),
+    {CrawledUrls, OtherDomainUrls, ImageLinks} = crawl(Url,[],[],[],[], 0),
     indexImages(ImageLinks),
     sendNewUrls(CrawledUrls,OtherDomainUrls).
 
-crawl(Url,CurrentDomainNotCrawledUrls,CurrentDomainCrawledUrls,OtherDomainUrls,ImageUrls) ->
+crawl(Url,CurrentDomainNotCrawledUrls,CurrentDomainCrawledUrls,OtherDomainUrls,ImageUrls, LinkCount) when LinkCount < ?MAX_PAGES_DOMAIN ->
 	Links = getLinks(Url),
     case Links of
 	    {[], []} ->  {CurrentDomainCrawledUrls,OtherDomainUrls, ImageUrls };
@@ -27,23 +29,26 @@ crawl(Url,CurrentDomainNotCrawledUrls,CurrentDomainCrawledUrls,OtherDomainUrls,I
    CurrentDomainUrls = [ Link || Link <- WebLinks, belongsToDomain(Link,Url)],
    OtherUrls = [ Link || Link <- WebLinks, not belongsToDomain(Link,Url)],
    % TODO REMOVE DUPLICATES
-   CurrentDomainNotCrawledUrls =  CurrentDomainNotCrawledUrls ++ CurrentDomainUrls,
+   PendingURLs =  CurrentDomainNotCrawledUrls ++ master:removeDuplicatedURLs(CurrentDomainUrls,CurrentDomainCrawledUrls),
 
-   case CurrentDomainNotCrawledUrls of
+   case PendingURLs of
         [Head | Tail] ->
-            crawl(Head,Tail,[Head | CurrentDomainCrawledUrls], OtherDomainUrls ++ OtherUrls, ImageUrls ++ NewImageUrls);
-        [] ->
+            crawl(Head,Tail,[Head | CurrentDomainCrawledUrls], OtherDomainUrls ++ OtherUrls, ImageUrls ++ NewImageUrls, LinkCount + 1);
+        _ ->
             {[Url | CurrentDomainCrawledUrls], OtherDomainUrls ++ OtherUrls, ImageUrls ++ NewImageUrls }
     end
 
-    end.
+    end;
+crawl(_Url,_CurrentDomainNotCrawledUrls,CurrentDomainCrawledUrls,OtherDomainUrls,ImageUrls, _LinkCount) ->
+    {CurrentDomainCrawledUrls, OtherDomainUrls, ImageUrls }.
 
-% Depends on  the input format(Lastra) + parser
+
+% Not best way of doing this
 belongsToDomain(String,Domain) ->
     string:equal(Domain,string:sub_string(String,1,string:len(Domain))).
 
 indexImages(ImageList) ->
-    %io:format("~p~n", [ImageList]),
+    %master:printList(ImageList),
     lists:map(fun (X) -> indexer:indexImage(X) end,ImageList).
 
 sendNewUrls(Crawled,NewUrls) ->

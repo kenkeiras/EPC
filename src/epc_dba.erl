@@ -54,8 +54,8 @@ splitHash(Number, List) ->
 
 
 % Writes image URL and data. Any types are valid for the parameters.
-put_im(URL, Hash) ->
-    [Hash0,Hash1,Hash2,Hash3,Hash4,Hash5,Hash6,Hash7] = splitHash(Hash),
+put_im(URL, [Hash0,Hash1,Hash2,Hash3,Hash4,Hash5,Hash6,Hash7]) ->
+    %[Hash0,Hash1,Hash2,Hash3,Hash4,Hash5,Hash6,Hash7] = splitHash(Hash),
 	mnesia:activity(async_dirty, fun()-> mnesia:write(#epc_images{url=URL, hash0=Hash0, 
 		hash1=Hash1, hash2=Hash2, hash3=Hash3, hash4=Hash4, hash5=Hash5, hash6=Hash6, 
 		hash7=Hash7}) end).
