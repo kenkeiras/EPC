@@ -46,18 +46,18 @@ get_domain(Url) ->
 % @doc gets a binary link and if starts with slash, appends Base url
 add_domain(RelativeUrl, BaseUrl) ->
     Link =  binary:bin_to_list(RelativeUrl),
-    AbsolutaDelTo = lists:any(fun (X) -> X == $: end, Link),
-    DomainAbsolute = lists:nth(1, Link) == $/,
-    if AbsolutaDelTo == true ->
-            Schemeless = lists:nth(1, Link) == $:,
-            if Schemeless ->
-                    {Scheme, _} = lists:splitwith(fun (X) -> X /= $: end,
-                                                  BaseUrl),
-                    Scheme ++ Link;
-               true ->
-                    Link  %Is a complete url
-            end;
-       DomainAbsolute ->
+    Schemeless = ((length(Link) > 1) and
+                  (lists:nth(1, Link) == $/) and
+                  (lists:nth(2, Link) == $/)),
+    FullyAbsolute = lists:any(fun (X) -> X == $: end, Link),
+    AbsolutePath = lists:nth(1, Link) == $/,
+    if Schemeless ->
+            {Scheme, _} = lists:splitwith(fun (X) -> X /= $: end,
+                                          BaseUrl),
+            Scheme ++ ":" ++ Link;
+       FullyAbsolute ->
+            Link;  %Is a complete url
+       AbsolutePath ->
             {Scheme, _} = lists:splitwith(fun (X) -> X /= $: end,
                                           BaseUrl),
             Scheme ++ "://" ++ get_domain(BaseUrl) ++ Link; %Starts with slash
