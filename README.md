@@ -19,24 +19,19 @@ Mnesia DB must be installed by calling epc_dba:install(list_of_nodes), where lis
 Start up
 --------
 
-Get to the *src*̂ directory `cd src`
-Compile the erlang code `erlc *`
-Run an erlang interpreter `erl`
-Load the master, indexer and phash port
+Compile the files
 
-    1> c(master).
-    {ok,master}
-    2> c(indexer).
-    {ok,indexer}
-    3> c(phash).
-    {ok,phash}`
+    unix> erl -make
 
+Start the interpreter on the `ebin/` directory.
+
+    unix> erl -pa ebin/ 
 
 And start the services
 
-    4> master:init().
+    1> master:init().
     true
-    5> indexer:start().
+    2> indexer:start().
     ok
-    6> phash:start().
+    3> phash:start().
     <0.66.0>`
