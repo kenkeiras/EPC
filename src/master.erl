@@ -14,7 +14,7 @@
 -export([printPendingURLs/0, printProcessedURLs/0, printSlaves/0]).
 
 %% Internal Exports
--export([loop/4, removeDuplicatedURLs/2, removeTrailingSlash/1]).
+-export([loop/4, removeDuplicatedURLs/2, removeTrailingSlash/1, printList/1]).
 
 -define(SLAVE_LIMIT, 50).
 
@@ -126,14 +126,11 @@ checkMessages(PendingURLs, ProcessedURLs, Slaves, SlaveCount) ->
             loop(PendingURLs, ProcessedURLs, Slaves, SlaveCount);
         % Client messages
         {foundURLs, Slave, {CrawledURLs, NewUrls}} ->
-        CrawledURLs_s = removeTrailingSlash(CrawledURLs),
-        NewUrls_s = removeTrailingSlash(NewUrls),
         CurrentSlaves = lists:delete(Slave, Slaves),
-        UrlsToAdd = removeDuplicatedURLs(NewUrls_s, CrawledURLs_s ++ ProcessedURLs), % Remove duplicated URLs
-        loop( UrlsToAdd ++ PendingURLs, CrawledURLs_s ++ ProcessedURLs, CurrentSlaves, SlaveCount - 1);
+        UrlsToAdd = removeDuplicatedURLs(NewUrls, CrawledURLs ++ ProcessedURLs), % Remove duplicated URLs
+        loop( UrlsToAdd ++ PendingURLs, CrawledURLs ++ ProcessedURLs, CurrentSlaves, SlaveCount - 1);
         {getImages, URLsToAdd} ->
-        	URLsToAdd_s = removeTrailingSlash(URLsToAdd),
-        	NewURLs = removeDuplicatedURLs(URLsToAdd_s, ProcessedURLs), % Remove duplicated URLs
+                NewURLs = removeDuplicatedURLs(URLsToAdd, ProcessedURLs), % Remove duplicated URLs
         	L = NewURLs ++ PendingURLs,
         	CurrentRemaingURLs = trim(L, length(L)), % Trims the URL list to the maximum number of pending URLs
         	loop(CurrentRemaingURLs, ProcessedURLs, Slaves, SlaveCount);

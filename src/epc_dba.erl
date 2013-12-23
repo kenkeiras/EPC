@@ -43,8 +43,19 @@ stop(Nodes) ->
 	io:format("database stahped.~n").
 
 
+splitHash(Number) ->
+    splitHash(Number, []).
+
+splitHash(Number, List) when Number < 100 ->
+    [Number | List];
+splitHash(Number, List) ->
+    NextNumber = round((Number / 100 - Number div 100) * 100),
+    splitHash(trunc(Number/100), [NextNumber | List]).
+
+
 % Writes image URL and data. Any types are valid for the parameters.
-put_im(URL, [Hash0,Hash1,Hash2,Hash3,Hash4,Hash5,Hash6,Hash7]) ->
+put_im(URL, Hash) ->
+    [Hash0,Hash1,Hash2,Hash3,Hash4,Hash5,Hash6,Hash7] = splitHash(Hash),
 	mnesia:activity(async_dirty, fun()-> mnesia:write(#epc_images{url=URL, hash0=Hash0, 
 		hash1=Hash1, hash2=Hash2, hash3=Hash3, hash4=Hash4, hash5=Hash5, hash6=Hash6, 
 		hash7=Hash7}) end).
@@ -87,7 +98,7 @@ get_by_simhash([Hash0,Hash1,Hash2,Hash3,Hash4,Hash5,Hash6,Hash7], Threshold) ->
 clear() ->
 	mnesia:clear_table(epc_images).
 
-
+% Tests are not updated with the new interfaces (numeric hashes, not lists)
 test() ->
 	io:format("Hello world!~n"),
 	DB_nodes = [node()],
