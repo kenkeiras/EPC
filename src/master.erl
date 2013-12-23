@@ -127,8 +127,9 @@ checkMessages(PendingURLs, ProcessedURLs, Slaves, SlaveCount) ->
         % Client messages
         {foundURLs, Slave, {CrawledURLs, NewUrls}} ->
         CurrentSlaves = lists:delete(Slave, Slaves),
-        UrlsToAdd = removeDuplicatedURLs(NewUrls, CrawledURLs ++ ProcessedURLs), % Remove duplicated URLs
-        loop( UrlsToAdd ++ PendingURLs, CrawledURLs ++ ProcessedURLs, CurrentSlaves, SlaveCount - 1);
+        CurrentProcessedURLs = sets:to_list(sets:from_list(CrawledURLs ++ ProcessedURLs)),
+        UrlsToAdd = removeDuplicatedURLs(NewUrls, CurrentProcessedURLs ), % Remove duplicated URLs
+        loop( sets:to_list(sets:from_list(UrlsToAdd ++ PendingURLs)), CurrentProcessedURLs, CurrentSlaves, SlaveCount - 1);
         {getImages, URLsToAdd} ->
                 NewURLs = removeDuplicatedURLs(URLsToAdd, ProcessedURLs), % Remove duplicated URLs
         	L = NewURLs ++ PendingURLs,

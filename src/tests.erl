@@ -2,7 +2,7 @@
 -export([test/0]).
 
 test1()->
-    master:getImages(["http://www.mixing.dj"]).
+    master:getImages(["http://elpais.com/"]).
 
 test()->
     master:init(),
