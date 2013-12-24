@@ -33,7 +33,8 @@ Start up
 
 ###Compile the files
 
-    unix> erl -make
+    erl -make
+
 
 ###Start the interpreter on the `ebin/` directory
 
@@ -46,7 +47,11 @@ Start up
     2> indexer:start().
     ok
     3> phash:start().
-    <0.66.0>`
+    <0.66.0>
     4> epc_dba:start([node()]).
     Starting database... database started.
     ok
+    5> web:init().
+    <0.92.0>
+
+In a web browser go to localhost:8080
