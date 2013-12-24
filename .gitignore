@@ -6,3 +6,4 @@ deps
 erl_crash.dump
 
 priv/phash_port
+include/web/error_log
