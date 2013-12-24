@@ -8,5 +8,5 @@ test()->
     master:init(),
     indexer:start(),
     phash:start(),
+    epc_dba:start([node()]),
     test1().
-    

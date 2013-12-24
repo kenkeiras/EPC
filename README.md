@@ -47,3 +47,6 @@ Start up
     ok
     3> phash:start().
     <0.66.0>`
+    4> epc_dba:start([node()]).
+    Starting database... database started.
+    ok
