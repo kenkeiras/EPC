@@ -5,7 +5,6 @@
 -define(SERVER_NAME, "EPC").
 -define(SERVER_ROOT, "include/web/").
 -define(DOCUMENT_ROOT, "include/web/htdocs").
--define(BIND_ADDRESS, "localhost").
 -define(ERROR_LOG_FILE, "error_log").
 
 init() ->
@@ -14,7 +13,7 @@ init() ->
                                     {server_name, ?SERVER_NAME},
                                     {server_root, ?SERVER_ROOT},
                                     {document_root, ?DOCUMENT_ROOT},
-                                    {bind_address, ?BIND_ADDRESS},
+                                    {bind_address, {127,0,0,1}},
                                     {debug, all_functions},
                                     {modules,
                                      [mod_alias, mod_esi, mod_get, mod_log]},
