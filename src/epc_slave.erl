@@ -3,7 +3,10 @@
 
 -define(MAX_PAGES_DOMAIN, 20).
 
-init(Url) ->    
+init(Url) ->
+    % Stop when master is done
+    link(whereis(master)),
+    process_flag(trap_exit, true),
     crawl(Url),
     ok.
 
@@ -25,7 +28,7 @@ crawl(Url,CurrentDomainNotCrawledUrls,CurrentDomainCrawledUrls,OtherDomainUrls,I
 	Links = getLinks(Url),
     case Links of
 	    {[], []} ->  {CurrentDomainCrawledUrls,OtherDomainUrls, ImageUrls };
-		{WebLinks,NewImageUrls} -> 
+		{WebLinks,NewImageUrls} ->
    CurrentDomainUrls = [ Link || Link <- WebLinks, belongsToDomain(Link,Url)],
    OtherUrls = [ Link || Link <- WebLinks, not belongsToDomain(Link,Url)],
    % TODO REMOVE DUPLICATES
@@ -33,7 +36,16 @@ crawl(Url,CurrentDomainNotCrawledUrls,CurrentDomainCrawledUrls,OtherDomainUrls,I
 
    case PendingURLs of
         [Head | Tail] ->
-            crawl(Head,Tail,[Head | CurrentDomainCrawledUrls], OtherDomainUrls ++ OtherUrls, ImageUrls ++ NewImageUrls, LinkCount + 1);
+           % Only continue crawling if master works
+           receive
+               {'EXIT', Pid, Reason} ->
+                   % Keep the info around for the moment of sending the data to the master.
+                   self() ! {'EXIT', Pid, Reason},
+                   {[Url | CurrentDomainCrawledUrls], OtherDomainUrls ++ OtherUrls, ImageUrls ++ NewImageUrls }
+           after
+               0 ->
+                   crawl(Head,Tail,[Head | CurrentDomainCrawledUrls], OtherDomainUrls ++ OtherUrls, ImageUrls ++ NewImageUrls, LinkCount + 1)
+           end;
         _ ->
             {[Url | CurrentDomainCrawledUrls], OtherDomainUrls ++ OtherUrls, ImageUrls ++ NewImageUrls }
     end
@@ -53,4 +65,10 @@ indexImages(ImageList) ->
 
 sendNewUrls(Crawled,NewUrls) ->
     %io:format("~p~n", [NewUrls]),
-    master ! {foundURLs, self(), {Crawled, NewUrls}}.
+    receive
+        {'EXIT', _Pid, _Reason} ->
+            ok
+    after
+        0 ->
+            master ! {foundURLs, self(), {Crawled, NewUrls}}
+    end.
