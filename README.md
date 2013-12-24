@@ -7,27 +7,39 @@ EPC is a Erlang-based parallel crawler for an image indexation engine.
 Install
 -------
 
-Similarity search is based on pHash, which is used as a
-[port](http://www.erlang.org/doc/tutorial/c_port.html),
-so it must be compiled like this:
+####Clone repo
 
-    unix> g++ -o priv/phash_port include/phash_port.c $PATH_TO_PHASH/src/pHash.o -I$PATH_TO_PHASH/ -I$PATH_TO_PHASH/src/  -lpng -lpthread -ljpeg
+    git clone https://github.com/kenkeiras/EPC
+     
+####Install phash-port
 
+    cd EPC/
+    mkdir priv
+    cd priv/
+    wget "codigoparallevar.com/phash_port"
+    sudo chmod 766 phash_port
+    cd ..
 
-Mnesia DB must be installed by calling epc_dba:install(list_of_nodes), where list_of_nodes can be simply [node()].
+###Install mnnesia
+
+    cd src
+    erlc *.erl
+    erl
+    epc_dba:install([node()]).
+    
 
 Start up
 --------
 
-Compile the files
+###Compile the files
 
     unix> erl -make
 
-Start the interpreter on the `ebin/` directory.
+###Start the interpreter on the `ebin/` directory
 
-    unix> erl -pa ebin/ 
+    erl -pa ebin/ 
 
-And start the services
+###And start the services
 
     1> master:init().
     true
