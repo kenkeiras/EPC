@@ -33,11 +33,15 @@ indexer_loop() ->
     receive
         {_From, {index, ImageUrl}} ->
 	    io:format("Indexer: ~p~n", [ImageUrl]),
-            {ok, AnswerData} = httpc:request(ImageUrl),
-            {_ReturnedCode, _ReturnedHeaders, ImageData} = AnswerData,
-            Perception = extractPerception(ImageData),
-	    io:format("Perception: ~p~n", [Perception]),
-            addToIndex(ImageUrl, Perception),
+            {ReturnCode, Data} = httpc:request(ImageUrl),
+            if ReturnCode == ok ->
+                    {_ReturnedCode, _ReturnedHeaders, ImageData} = Data,
+                    Perception = extractPerception(ImageData),
+                    io:format("Perception: ~p~n", [Perception]),
+                    addToIndex(ImageUrl, Perception);
+               true ->
+                    ok
+            end,
             indexer_loop()
     end.
 
