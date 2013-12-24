@@ -3,7 +3,7 @@
 %%% @end
 
 -module(indexer).
--export([indexImage/1, start/0]).
+-export([indexImage/1, start/0, stop/0]).
 
 -export([indexer/0]).
 
@@ -27,6 +27,10 @@ indexImage(ImageUrl) ->
     io:format("ImageURL: ~p~n", [ImageUrl]),
     indexer ! {self(), {index, ImageUrl}}.
 
+%% Stop indexer service
+stop() ->
+    indexer ! stop.
+
 
 %% indexing loop
 indexer_loop() ->
@@ -42,7 +46,9 @@ indexer_loop() ->
                true ->
                     ok
             end,
-            indexer_loop()
+            indexer_loop();
+        stop ->
+            ok
     end.
 
 

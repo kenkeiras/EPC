@@ -3,7 +3,7 @@
 %%% @end
 
 -module(phash).
--export([hash/1, start/0]).
+-export([hash/1, start/0, stop/0]).
 
 -export([pHash/0]).
 
@@ -24,6 +24,11 @@ hash(ImageData) ->
         {phash, Hash} ->
             Hash
     end.
+
+
+%% Stop phash service
+stop() ->
+    phash ! stop.
 
 %% pHash port registration
 pHash() ->
@@ -66,9 +71,11 @@ portLoop(Port) ->
             receive
                 {Port, {data, Data}} ->
                     From ! {phash, decode(Data)}
-            end
-    end,
-    portLoop(Port).
+            end,
+            portLoop(Port);
+        stop ->
+            ok
+    end.
 
 
 start() ->
