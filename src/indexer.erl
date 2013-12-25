@@ -23,9 +23,8 @@ addToIndex(ImageUrl, Perception) ->
 
 
 %% Main function
-indexImage(ImageUrl) ->
-    io:format("ImageURL: ~p~n", [ImageUrl]),
-    indexer ! {self(), {index, ImageUrl}}.
+indexImage({ImageURL, Image}) ->
+    indexer ! {self(), {index, {ImageURL, Image}}}.
 
 %% Stop indexer service
 stop() ->
@@ -35,17 +34,10 @@ stop() ->
 %% indexing loop
 indexer_loop() ->
     receive
-        {_From, {index, ImageUrl}} ->
-	    io:format("Indexer: ~p~n", [ImageUrl]),
-            {ReturnCode, Data} = httpc:request(ImageUrl),
-            if ReturnCode == ok ->
-                    {_ReturnedCode, _ReturnedHeaders, ImageData} = Data,
-                    Perception = extractPerception(ImageData),
-                    io:format("Perception: ~p~n", [Perception]),
-                    addToIndex(ImageUrl, Perception);
-               true ->
-                    ok
-            end,
+        {_From, {index, {ImageURL, Image}}} ->
+            Perception = extractPerception(Image),
+            io:format("Url: ~p~nPerception: ~p~n", [ImageURL, Perception]),
+            %addToIndex(ImageURL, Perception),
             indexer_loop();
         stop ->
             ok
@@ -60,8 +52,6 @@ indexer() ->
 
 %% Executes on module load, initializes the needed structures
 start() ->
-    % Inets required for HTTP client requests
-    inets:start(),
     % indexer service
     spawn(?MODULE, indexer, []),
     ok.

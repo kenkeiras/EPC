@@ -10,25 +10,17 @@ init(Url) ->
     crawl(Url),
     ok.
 
-getLinks(URL) ->
-    try web_lib:get_data(URL) of
-	{WebLinks,NewImageUrls} ->
-	    {WebLinks,NewImageUrls}
-    catch _:_ ->
-	    {[], []}
-    end.
-
 
 crawl(Url)->
-    {CrawledUrls, OtherDomainUrls, ImageLinks} = crawl(Url,[],[],[],[], 0),
-    indexImages(ImageLinks),
+    {CrawledUrls, OtherDomainUrls, Images} = crawl(Url,[],[],[],[], 0),
+    indexImages(Images),
     sendNewUrls(CrawledUrls,OtherDomainUrls).
 
-crawl(Url,CurrentDomainNotCrawledUrls,CurrentDomainCrawledUrls,OtherDomainUrls,ImageUrls, LinkCount) when LinkCount < ?MAX_PAGES_DOMAIN ->
-	Links = getLinks(Url),
+crawl(Url,CurrentDomainNotCrawledUrls,CurrentDomainCrawledUrls,OtherDomainUrls,Images, LinkCount) when LinkCount < ?MAX_PAGES_DOMAIN ->
+	Links = web_lib:get_data(Url),
     case Links of
-	    {[], []} ->  {CurrentDomainCrawledUrls,OtherDomainUrls, ImageUrls };
-		{WebLinks,NewImageUrls} ->
+	    {[], []} ->  {CurrentDomainCrawledUrls,OtherDomainUrls, Images };
+		{WebLinks,NewImages} ->
    CurrentDomainUrls = [ Link || Link <- WebLinks, belongsToDomain(Link,Url)],
    OtherUrls = [ Link || Link <- WebLinks, not belongsToDomain(Link,Url)],
    % TODO REMOVE DUPLICATES
@@ -41,18 +33,18 @@ crawl(Url,CurrentDomainNotCrawledUrls,CurrentDomainCrawledUrls,OtherDomainUrls,I
                {'EXIT', Pid, Reason} ->
                    % Keep the info around for the moment of sending the data to the master.
                    self() ! {'EXIT', Pid, Reason},
-                   {[Url | CurrentDomainCrawledUrls], OtherDomainUrls ++ OtherUrls, ImageUrls ++ NewImageUrls }
+                   {[Url | CurrentDomainCrawledUrls], OtherDomainUrls ++ OtherUrls, Images ++ NewImages }
            after
                0 ->
-                   crawl(Head,Tail,[Head | CurrentDomainCrawledUrls], OtherDomainUrls ++ OtherUrls, ImageUrls ++ NewImageUrls, LinkCount + 1)
+                   crawl(Head,Tail,[Head | CurrentDomainCrawledUrls], OtherDomainUrls ++ OtherUrls, Images ++ NewImages, LinkCount + 1)
            end;
         _ ->
-            {[Url | CurrentDomainCrawledUrls], OtherDomainUrls ++ OtherUrls, ImageUrls ++ NewImageUrls }
+            {[Url | CurrentDomainCrawledUrls], OtherDomainUrls ++ OtherUrls, Images ++ NewImages }
     end
 
     end;
-crawl(_Url,_CurrentDomainNotCrawledUrls,CurrentDomainCrawledUrls,OtherDomainUrls,ImageUrls, _LinkCount) ->
-    {CurrentDomainCrawledUrls, OtherDomainUrls, ImageUrls }.
+crawl(_Url,_CurrentDomainNotCrawledUrls,CurrentDomainCrawledUrls,OtherDomainUrls,Images, _LinkCount) ->
+    {CurrentDomainCrawledUrls, OtherDomainUrls, Images }.
 
 
 % Not best way of doing this
