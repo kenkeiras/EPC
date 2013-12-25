@@ -15,13 +15,60 @@
 %% @spec get_data(URL :: string()) -> {Links :: string(), Images :: string()}
 get_data(URL) ->
     inets:start(),
-    {_, { _, _, Data}} = httpc:request(URL),
-    ParsedData = mochiweb_html:parse(Data),
-    Links = crawl_for(<<"a">>, ParsedData, []),
-    Images = crawl_for(<<"img">>, ParsedData, []),
-    LinkURLs = filter_second_by(<<"href">>, Links),
-    ImageURLs = filter_second_by(<<"src">>, Images),
-    {relative_to_abs(LinkURLs, URL), relative_to_abs(ImageURLs, URL)}.
+    % {_, { _, _, Data}} = httpc:request(URL)
+    % This can cause web_lib to throw a "no match" exception:
+    % {error,{failed_connect,[{to_address,{"www.asdfasdf.es", 80}}, {inet,[inet],nxdomain}]}}
+    Response = httpc:request(URL),
+    case Response of
+	{ok, {_ResponseCode, ResponseHeaders, ResponseBody}} -> 
+		parseResponse(URL, ResponseHeaders, ResponseBody);
+	_ -> 
+		{[], []}		
+    end.
+
+
+parseResponse(URL, ResponseHeaders, ResponseBody) ->
+	case lists:keyfind("content-type", 1, ResponseHeaders) of
+		{"content-type", ContentType} ->
+			case string:str(ContentType, "text/html") of % check that we have a web page
+				0 -> 
+					{[], []};
+				_ ->
+					ParsedData = mochiweb_html:parse(ResponseBody),
+					Anchors = crawl_for(<<"a">>, ParsedData, []),
+					Iframes = crawl_for(<<"iframe">>, ParsedData, []),
+					Frames = crawl_for(<<"frame">>, ParsedData, []),
+					ImageTags = crawl_for(<<"img">>, ParsedData, []),
+					LinkURLs = filter_second_by(<<"href">>, Anchors) ++ filter_second_by(<<"src">>, Iframes) ++ filter_second_by(<<"src">>, Frames),
+					ImageURLs = filter_second_by(<<"src">>, ImageTags),
+					ImageURLsAbs = relative_to_abs(ImageURLs, URL),
+					Images = [{ImageURL, Image} || {ImageURL, Image} <- [{ImageURL, downloadImage(ImageURL)} || ImageURL <- ImageURLsAbs], Image =/= noImage],
+					{relative_to_abs(LinkURLs, URL), Images}
+					
+			end;
+		_ -> 
+			{[], []}
+	end.
+			
+
+downloadImage(URL) ->
+	ImageTypes = ["image/jpg", "image/jpeg", "image/png"], % IMPORTANT NOTE, AS FAR AS I KNOW PHASH ONLY SUPPORTS JPEGs AND PNGs
+	Response = httpc:request(URL),
+	case Response of
+		{ok, {_ResponseCode, ResponseHeaders, ResponseBody}} ->
+			case lists:keyfind("content-type", 1, ResponseHeaders) of
+				{"content-type", ContentType} ->
+					case length([Type || Type <- ImageTypes, 0 =/= string:str(ContentType, Type)]) of
+						0 -> noImage;
+						_ -> ResponseBody
+					end;
+			_ -> noImage
+			end;
+		_ -> noImage
+	end.
+						
+	
+	
 
 %% @doc Internal utility function
 crawl_for(Tag, {Tag, Properties, Children}, List) ->
@@ -46,11 +93,12 @@ get_domain(Url) ->
 % @doc gets a binary link and if starts with slash, appends Base url
 add_domain(RelativeUrl, BaseUrl) ->
     Link =  binary:bin_to_list(RelativeUrl),
-    Schemeless = ((length(Link) > 1) and
+    % andalso evaluates using short circuit
+    Schemeless = ((length(Link) > 1) andalso
                   (lists:nth(1, Link) == $/) and
                   (lists:nth(2, Link) == $/)),
     FullyAbsolute = lists:any(fun (X) -> X == $: end, Link),
-    AbsolutePath = lists:nth(1, Link) == $/,
+    AbsolutePath = (length(Link) > 0) andalso (lists:nth(1, Link) == $/),
     if Schemeless ->
             {Scheme, _} = lists:splitwith(fun (X) -> X /= $: end,
                                           BaseUrl),
@@ -67,8 +115,7 @@ add_domain(RelativeUrl, BaseUrl) ->
 
             lists:reverse(S) ++ Link
 
-    end
-    .
+    end.
 
 %% @doc transforms relative links into absolute links
 relative_to_abs(LinkUrls, URL) ->

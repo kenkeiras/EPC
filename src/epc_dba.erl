@@ -43,16 +43,6 @@ stop(Nodes) ->
 	io:format("database stahped.~n").
 
 
-splitHash(Number) ->
-    splitHash(Number, []).
-
-splitHash(Number, List) when Number < 100 ->
-    [Number | List];
-splitHash(Number, List) ->
-    NextNumber = round((Number / 100 - Number div 100) * 100),
-    splitHash(trunc(Number/100), [NextNumber | List]).
-
-
 % Writes image URL and data. Any types are valid for the parameters.
 put_im(URL, [Hash0,Hash1,Hash2,Hash3,Hash4,Hash5,Hash6,Hash7]) ->
     %[Hash0,Hash1,Hash2,Hash3,Hash4,Hash5,Hash6,Hash7] = splitHash(Hash),
