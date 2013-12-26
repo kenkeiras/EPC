@@ -68,10 +68,14 @@ get_by_hash([Hash0,Hash1,Hash2,Hash3,Hash4,Hash5,Hash6,Hash7]) ->
 		hash7=Hash7}) end).
 		
 
+% Get all the images with similarity under the Threshold parameter. Returns a list of 10-element tuples:
+% { URL: The URL of the image.
+%	Hash0,Hash1,Hash2,Hash3,Hash4,Hash5,Hash6,Hash7: The eight bytes of the hash.
+%   Similarity: A numerical difference between the given hash and the one from above.}
+% The returned list is sorted by the Similarity value.
 get_by_simhash([Hash0,Hash1,Hash2,Hash3,Hash4,Hash5,Hash6,Hash7], Threshold) ->
-	mnesia:activity(async_dirty, fun() -> mnesia:select(epc_images, [{#epc_images{hash0='$0', 
+	Results = mnesia:activity(async_dirty, fun() -> mnesia:select(epc_images, [{#epc_images{hash0='$0', 
 		hash1='$1', hash2='$2', hash3='$3', hash4='$4', hash5='$5', hash6='$6', hash7='$7', url='$8'},
-		%[{'=<', {abs, {'-', Hash0, '$0'}}, Threshold}],
 		[{'=<', {'+', 
 			{'+', 
 				{'+', {abs, {'-', Hash0, '$0'}}, {abs, {'-', Hash1, '$1'}}},
@@ -82,7 +86,11 @@ get_by_simhash([Hash0,Hash1,Hash2,Hash3,Hash4,Hash5,Hash6,Hash7], Threshold) ->
 				{'+', {abs, {'-', Hash6, '$6'}}, {abs, {'-', Hash7, '$7'}}}
 			}}, 
 			Threshold}],
-		[{{'$8', '$0', '$1', '$2', '$3', '$4', '$5', '$6', '$7'}}]}]) end).
+		[{{'$8', '$0', '$1', '$2', '$3', '$4', '$5', '$6', '$7'}}]}]) end),
+	
+	Similarities = [{Url, H0, H1, H2, H3, H4, H5, H6, H7, abs((H0+H1+H2+H3+H4+H5+H6+H7) - 
+		(Hash0+Hash1+Hash2+Hash3+Hash4+Hash5+Hash6+Hash7))} || {Url, H0, H1, H2, H3, H4, H5, H6, H7} <- Results],
+	lists:sort(fun({_,_,_,_,_,_,_,_,_,S1}, {_,_,_,_,_,_,_,_,_,S2}) -> S1 =< S2 end, Similarities).
 
 
 clear() ->
@@ -98,6 +106,8 @@ test() ->
 	epc_dba:put_im(a, [10,11,12,13,14,15,16,17]),
 	epc_dba:put_im(b, [10,11,12,13,14,15,16,17]),
 	epc_dba:put_im(c, [17,16,15,14,13,12,11,10]),
+	epc_dba:put_im(d, [12,11,12,13,14,15,16,19]),
+	epc_dba:put_im(e, [20,11,12,13,14,15,16,30]),
 	epc_dba:stop(DB_nodes),
 	epc_dba:start(DB_nodes),
 	io:format("get_im: ~p~n", [epc_dba:get_im("http://www.meretricessinfronteras.com/personal/pepa.jpg")]),
@@ -107,4 +117,5 @@ test() ->
 	io:format("get_by_simhash([23,16,15,14,13,12,11,10],10): ~p~n", [epc_dba:get_by_simhash([23,16,15,14,13,12,11,10], 10)]),
 	io:format("get_by_simhash([9,11,15,13,14,14,14,20], 10)): ~p~n", [epc_dba:get_by_simhash([9,11,15,13,14,14,14,20], 10)]),
 	io:format("get_by_simhash([8,11,15,13,14,14,14,20], 10)): ~p~n", [epc_dba:get_by_simhash([8,11,15,13,14,14,14,20], 10)]),
-	io:format("get_by_simhash([8,11,15,13,14,14,14,20], 11): ~p~n", [epc_dba:get_by_simhash([8,11,15,13,14,14,14,20], 11)]).
+	io:format("get_by_simhash([8,11,15,13,14,14,14,20], 11): ~p~n", [epc_dba:get_by_simhash([8,11,15,13,14,14,14,20], 11)]),
+	io:format("get_by_simhash([15,11,12,13,14,15,16,17], 30): ~p~n", [epc_dba:get_by_simhash([15,11,12,13,14,15,16,17], 30)]).
