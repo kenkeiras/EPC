@@ -3,6 +3,16 @@
 
 -define(EXPECTED_FORM, "multipart/form-data;").
 -define(THRESHOLD, 1000).
+-define(MAX_RESULTS, 20).
+-define(HEADER, "<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8' />
+    <title>EPC -- Results</title>
+  </head>
+  <body>
+").
+-define(FOOTER, "  </body></html>").
 
 
 separateImageAndData(ImageBlock) ->
@@ -26,6 +36,21 @@ separateImageAndData(ImageBlock, Headers) ->
                                         | Headers])
     end.
 
+%%% Convert image URL list to HTML
+showResults(R) ->
+    showResults(R, [], ?MAX_RESULTS).
+
+showResults([], Acc, _) ->
+    %% Join the results with the separator
+    string:join(Acc, "<br />");
+
+showResults(_, Acc, 0) ->
+    showResults([], Acc, 0);
+
+showResults([{Url, _, _, _, _, _, _, _, _, _} | T], Acc, ResultsToGo) ->
+    ResultHTML = io_lib:format("<a href=\"~s\">~s<br /><img src=\"~s\" /></a>",
+                               [Url, Url, Url]),
+    showResults(T, [ResultHTML | Acc], ResultsToGo - 1).
 
 
 %% @doc Manage search petition from the HTTP daemon
@@ -71,13 +96,12 @@ search(SessionID, Env, Input) ->
                             [ImageBlock] = InterestingBlocks,
                             {_Head, Image} = separateImageAndData(ImageBlock),
                             Hash = phash:hash(Image),
-                            Result = epc_dba:get_by_simhash(Hash, ?THRESHOLD),
+                            Results = epc_dba:get_by_simhash(Hash, ?THRESHOLD),
                             mod_esi:deliver(SessionID,
-                                            io_lib:format("~p~n",
-                                                          [Result]))
+                                            io_lib:format("~s~s~s~n",
+                                                          [?HEADER,
+                                                           showResults(Results),
+                                                           ?FOOTER]))
                     end
             end
     end.
-    %mod_esi:deliver(SessionID, lists:map(fun (X) -> lists:nth(X, _Input) end,
-    %                                     lists:seq(1, 100))).
-    % lists:flatten(io_lib:format("~p", [ContentType]))
