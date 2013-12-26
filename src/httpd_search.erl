@@ -4,33 +4,6 @@
 -define(EXPECTED_FORM, "multipart/form-data;").
 -define(THRESHOLD, 1000).
 
-splitDataBlocks(Boundary, Input) ->
-    splitDataBlocks(Boundary, Input, [], []).
-
-splitDataBlocks(_Boundary, [], Acc, Curr) ->
-    if Curr /= [] ->
-            [lists:reverse(Curr) | Acc];
-       true ->
-            Acc
-    end;
-
-splitDataBlocks(Boundary, Input, Acc, Curr) ->
-    OnBoundary = (length(Input) >= length(Boundary))
-        andalso (Boundary == lists:map(fun(X) -> lists:nth(X, Input) end,
-                                       lists:seq(1, length(Boundary)))),
-    if OnBoundary ->
-            NewAcc = if Curr /= [] ->
-                             [lists:reverse(Curr) | Acc];
-                        true ->
-                             Acc
-                     end,
-            splitDataBlocks(Boundary, lists:nthtail(length(Boundary), Input),
-                            NewAcc, []);
-       not OnBoundary ->
-            splitDataBlocks(Boundary, lists:nthtail(1, Input),
-                            Acc, [lists:nth(1, Input) | Curr])
-    end.
-
 
 separateImageAndData(ImageBlock) ->
     Block = string:strip(string:strip(ImageBlock, left, $\r), left, $\n),
@@ -84,7 +57,7 @@ search(SessionID, Env, Input) ->
                     Boundary = lists:nthtail(1, ABound),
 
 
-                    DataBlocks = splitDataBlocks(Boundary, Input),
+                    DataBlocks = string:tokens(Input, [Boundary]),
                     InterestingBlocks = lists:filter(fun (X) ->
                                                              length(X) > 10
                                                      end, DataBlocks),
