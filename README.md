@@ -20,18 +20,17 @@ Install
     sudo chmod 766 phash_port
     cd ..
 
-
-Start up
---------
-
 ###Compile the files
 
     erl -make
 
-###Install mnnesia (only once)
+###Install mnnesia
 
     erl -pa ebin/
     1> epc_dba:install([node()]).
+
+Start up
+--------
 
 ###Start the interpreter on the `ebin/` directory
 
