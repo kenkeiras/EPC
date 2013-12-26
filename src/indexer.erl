@@ -37,7 +37,7 @@ indexer_loop() ->
         {_From, {index, {ImageURL, Image}}} ->
             Perception = extractPerception(Image),
             io:format("Url: ~p~nPerception: ~p~n", [ImageURL, Perception]),
-            %addToIndex(ImageURL, Perception),
+            addToIndex(ImageURL, Perception),
             indexer_loop();
         stop ->
             ok
