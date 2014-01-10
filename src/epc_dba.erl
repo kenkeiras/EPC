@@ -189,8 +189,8 @@ test() ->
 	io:format("get_by_hash([10,11,12,13,14,15,16,17]): ~p~n", [epc_dba:get_by_hash([10,11,12,13,14,15,16,17])]),
 	io:format("get_by_hash([17,16,15,14,13,12,11,10]): ~p~n", [epc_dba:get_by_hash([17,16,15,14,13,12,11,10])]),
 	io:format("get_by_hash([23,16,15,14,13,12,11,10]): ~p~n", [epc_dba:get_by_hash([23,16,15,14,13,12,11,10])]),
-	io:format("get_by_simhash([23,16,15,14,13,12,11,10],10): ~p~n", [epc_dba:get_by_simhash([23,16,15,14,13,12,11,10], 10)]),
-	io:format("get_by_simhash([9,11,15,13,14,14,14,20], 10)): ~p~n", [epc_dba:get_by_simhash([9,11,15,13,14,14,14,20], 10)]),
+	io:format("get_by_simhash([23,16,15,14,13,12,11,10],40): ~p~n", [epc_dba:get_by_simhash([23,16,15,14,13,12,11,10], 40)]),
+	io:format("get_by_simhash([9,11,15,13,14,14,14,20], 50)): ~p~n", [epc_dba:get_by_simhash([9,11,15,13,14,14,14,20], 50)]),
 	io:format("get_by_simhash([8,11,15,13,14,14,14,20], 10)): ~p~n", [epc_dba:get_by_simhash([8,11,15,13,14,14,14,20], 10)]),
 	io:format("get_by_simhash([8,11,15,13,14,14,14,20], 11): ~p~n", [epc_dba:get_by_simhash([8,11,15,13,14,14,14,20], 11)]),
-	io:format("get_by_simhash([15,11,12,13,14,15,16,17], 30): ~p~n", [epc_dba:get_by_simhash([15,11,12,13,14,15,16,17], 30)]).
+	io:format("get_by_simhash([15,11,12,13,14,15,16,17], 40): ~p~n", [epc_dba:get_by_simhash([15,11,12,13,14,15,16,17], 40)]).
