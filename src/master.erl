@@ -11,10 +11,10 @@
 -export([init/0, getImages/1]).
 
 %% Debug methods
--export([printPendingURLs/0, printProcessedURLs/0, printSlaves/0]).
+-export([printPendingURLs/0]).
 
 %% Internal Exports
--export([loop/4, removeDuplicatedURLs/2, removeTrailingSlash/1, printList/1]).
+-export([loop/3, removeDuplicatedURLs/2, printList/1]).
 
 -define(SLAVE_LIMIT, 50).
 
@@ -26,7 +26,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 init() ->
 	process_flag(trap_exit, true),
-	PID = spawn(master, loop, [[], [], [], 0]),
+	PID = spawn(master, loop, [[], [], 0]),
 	register(master, PID).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -34,12 +34,6 @@ init() ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 printPendingURLs() ->
 	master ! printPendingURLs.
-
-printProcessedURLs() ->
-	master ! printProcessedURLs.
-
-printSlaves() ->
-	master ! printSlaves.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Tells the master to enqueue new URLs.
@@ -54,39 +48,27 @@ getImages(URLs) ->
 removeDuplicatedURLs(URLsToAdd, ProcessedURLs) ->
 	[URL || URL <- URLsToAdd, not lists:any(fun(ProcessedURL) -> ProcessedURL == URL end, ProcessedURLs)].
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Removes trailing slashes from URLs
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-removeTrailingSlash(L) ->
-	removeTrailingSlash(L, []).
-removeTrailingSlash([W | T], Result) ->
-        case W of
-            [] ->
-                removeTrailingSlash(T, Result);
-            _-> removeTrailingSlash(T, [W | Result])
-           % _ ->
-           %    case lists:last(W) of
-           %         $/ -> removeTrailingSlash(T, [lists:sublist(W, length(W) - 1) | Result]);
-           %         _ -> removeTrailingSlash(T, [W | Result])
-		%end
-        end;
-removeTrailingSlash([], Result) ->
-    Result.
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Removes URLs already in databse
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+removeDuplicatedURLs(URLs) ->
+	[URL || URL <- URLs, not epc_dba:checkURL(URL)].
+	
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Creates slaves to crawl URLs if we have available slots
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-assignURLs([], ProcessedURLs, Slaves, _) -> % No new URLs to assign
-	{[], ProcessedURLs, Slaves};
+assignURLs([], Slaves, _) -> % No new URLs to assign
+	{[], Slaves};
 
-assignURLs(PendingURLs, ProcessedURLs, Slaves, 0) -> % No Slave slots
-	{PendingURLs, ProcessedURLs, Slaves};
+assignURLs(PendingURLs, Slaves, 0) -> % No Slave slots
+	{PendingURLs, Slaves};
 
-assignURLs([URL | T], ProcessedURLs, Slaves, SlaveSlots) ->
+assignURLs([URL | T], Slaves, SlaveSlots) ->
 	Slave = spawn(epc_slave, init, [ URL]),
-	assignURLs(T, [URL | ProcessedURLs], [Slave | Slaves], SlaveSlots - 1).
+	epc_dba:storeCrawledURL([URL]),
+	assignURLs(T, [Slave | Slaves], SlaveSlots - 1).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -102,54 +84,58 @@ trim(URLs, _) ->
 % Pritns list
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 printList([]) ->
-	io:fwrite("End of list~n", []);
+	io:fwrite("~n", []);
 printList([H | T]) ->
 	io:fwrite("~s~n", [H]),
 	printList(T).
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Store urls in database
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+storeURLs([]) ->
+	ok;
+storeURLs([H | T]) ->
+	epc_dba:storeCrawledURL(H),
+	storeURLs(T).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Receive messages
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-checkMessages(PendingURLs, ProcessedURLs, Slaves, SlaveCount) ->
+checkMessages(PendingURLs, Slaves, SlaveCount) ->
 	receive
 		% Debug messages
         stop ->
             ok;
         printPendingURLs ->
             printList(PendingURLs),
-            loop(PendingURLs, ProcessedURLs, Slaves, SlaveCount);
-        printProcessedURLs ->
-            printList(ProcessedURLs),
-            loop(PendingURLs, ProcessedURLs, Slaves, SlaveCount);
-        printSlaves ->
-            printList(Slaves),
-            loop(PendingURLs, ProcessedURLs, Slaves, SlaveCount);
+            loop(PendingURLs, Slaves, SlaveCount);
         % Client messages
         {foundURLs, Slave, {CrawledURLs, NewUrls}} ->
-        CurrentSlaves = lists:delete(Slave, Slaves),
-        CurrentProcessedURLs = sets:to_list(sets:from_list(CrawledURLs ++ ProcessedURLs)),
-        UrlsToAdd = removeDuplicatedURLs(NewUrls, CurrentProcessedURLs ), % Remove duplicated URLs
-        loop( sets:to_list(sets:from_list(UrlsToAdd ++ PendingURLs)), CurrentProcessedURLs, CurrentSlaves, SlaveCount - 1);
+		    CurrentSlaves = lists:delete(Slave, Slaves),
+			storeURLs(CrawledURLs),
+		    UrlsToAdd = removeDuplicatedURLs(NewUrls), % Remove duplicated URLs already in database
+		    loop( sets:to_list(sets:from_list(UrlsToAdd ++ PendingURLs)), CurrentSlaves, SlaveCount - 1);
         {getImages, URLsToAdd} ->
-                NewURLs = removeDuplicatedURLs(URLsToAdd, ProcessedURLs), % Remove duplicated URLs
+                NewURLs = removeDuplicatedURLs(URLsToAdd), % Remove duplicated URLs
         	L = NewURLs ++ PendingURLs,
         	CurrentRemaingURLs = trim(L, length(L)), % Trims the URL list to the maximum number of pending URLs
-        	loop(CurrentRemaingURLs, ProcessedURLs, Slaves, SlaveCount);
+        	loop(CurrentRemaingURLs, Slaves, SlaveCount);
         {'EXIT', _, _} ->
         	io:fwrite("Something wrong has happened", []),
         	exit(self(), error)
     after
         100 ->
-            loop(PendingURLs, ProcessedURLs, Slaves, SlaveCount) % Loop forever
+            loop(PendingURLs, Slaves, SlaveCount) % Loop forever
     end.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main loop
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-loop(PendingURLs, ProcessedURLs, Slaves, SlaveCount) when SlaveCount < ?SLAVE_LIMIT ->
-	{RemainingURLs, CurrentProcessedURLs, CurrentSlaves} = assignURLs(PendingURLs, ProcessedURLs, Slaves, ?SLAVE_LIMIT - SlaveCount),
-	checkMessages(RemainingURLs, CurrentProcessedURLs, CurrentSlaves, length(CurrentSlaves));
+loop(PendingURLs, Slaves, SlaveCount) when SlaveCount < ?SLAVE_LIMIT ->
+	{RemainingURLs, CurrentSlaves} = assignURLs(PendingURLs, Slaves, ?SLAVE_LIMIT - SlaveCount),
+	checkMessages(RemainingURLs, CurrentSlaves, length(CurrentSlaves));
 
-loop(PendingURLs, ProcessedURLs, Slaves, SlaveCount) ->
-	checkMessages(PendingURLs, ProcessedURLs, Slaves, SlaveCount).
+loop(PendingURLs, Slaves, SlaveCount) ->
+	checkMessages(PendingURLs, Slaves, SlaveCount).
