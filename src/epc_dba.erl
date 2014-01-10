@@ -1,7 +1,7 @@
 -module(epc_dba).
 -export([test/0, install/1, uninstall/1, start/1, stop/1, put_im/2, get_im/1, get_by_hash/1, get_by_simhash/2, clear/0]).
 
--export([storeCrawledURL/1, checkURL/1, hamming_distance_guard/2]).
+-export([storeCrawledURL/1, checkURL/1, hamming_distance_guard/2, same_bit_to_int/3]).
 
 -record(epc_images, {url,hash0,hash1,hash2,hash3,hash4,hash5,hash6,hash7}).
 -record(epc_crawled_urls, {url, crawl_date}). % Crawl again when date too old
