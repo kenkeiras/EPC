@@ -1,7 +1,10 @@
 -module(epc_dba).
 -export([test/0, install/1, uninstall/1, start/1, stop/1, put_im/2, get_im/1, get_by_hash/1, get_by_simhash/2, clear/0]).
 
+-export([storeCrawledURL/1, checkURL/1]).
+
 -record(epc_images, {url,hash0,hash1,hash2,hash3,hash4,hash5,hash6,hash7}).
+-record(epc_crawled_urls, {url, crawl_date}). % Crawl again when date too old
 
 % Install the schemas (DB files) on these nodes and start Mnesia on them.
 % Use only once in your whole life.
@@ -16,7 +19,12 @@ install(Nodes) ->
 			#epc_images.hash4, #epc_images.hash5, #epc_images.hash6, #epc_images.hash7]},
 		{disc_copies, Nodes}]),
 		
-	rpc:multicall(Nodes, mnesia, wait_for_tables, [[epc_images], 5000]),
+	mnesia:create_table(epc_crawled_urls,
+		[{attributes, record_info(fields, epc_crawled_urls)},
+		{index, [#epc_crawled_urls.crawl_date]},
+		{disc_copies, Nodes}]),
+	
+	rpc:multicall(Nodes, mnesia, wait_for_tables, [[epc_images, epc_crawled_urls], 5000]),
 	io:format("done installing.~n").
 
 
@@ -32,7 +40,7 @@ uninstall(Nodes) ->
 start(Nodes) ->
 	io:format("Starting database... "),
 	{_, []} = rpc:multicall(Nodes, application, start, [mnesia]),
-	rpc:multicall(Nodes, mnesia, wait_for_tables, [[epc_images], 5000]),
+	rpc:multicall(Nodes, mnesia, wait_for_tables, [[epc_images, epc_crawled_urls], 5000]),
 	io:format("database started.~n").
 
 
@@ -41,6 +49,18 @@ stop(Nodes) ->
 	io:format("Stopping database... "),
 	{_, []} = rpc:multicall(Nodes, application, stop, [mnesia]),
 	io:format("database stahped.~n").
+
+
+storeCrawledURL(URL) ->
+	D = date(),
+	mnesia:activity(async_dirty, fun()-> mnesia:write(#epc_crawled_urls{url=URL, crawl_date=D}) end).
+
+
+checkURL(URL) ->
+	case mnesia:activity(async_dirty, fun()-> mnesia:read({epc_crawled_urls, URL}) end) of
+		[#epc_crawled_urls{crawl_date=_}] -> true;
+		[] -> false
+	end.
 
 
 % Writes image URL and data. Any types are valid for the parameters.
