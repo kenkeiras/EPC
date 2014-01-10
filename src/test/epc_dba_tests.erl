@@ -1,6 +1,7 @@
 -module(epc_dba_tests).
 
 -include_lib("eunit/include/eunit.hrl").
+-export([interpret/1]).
 
 interpret({Operation, T}) ->
     O = interpret(T),
@@ -23,6 +24,8 @@ interpret({Operation, T1, T2}) ->
             O1 + O2;
         '-' ->
             O1 - O2;
+        '*' ->
+            O1 * O2;
         'div' ->
             O1 div O2
     end;

@@ -107,9 +107,10 @@ hamming_distance_guard([DBHash | DBTail], [ImgHash | ImgTail]) ->
 % yield booleans, erlang doesn't add booleans and mnesia doesn't allow for user
 % defined functions, so while a better solution comes up the system does this:
 %
-% Divide each separated bit (band does return integers) by SelectedBit * 2, so
-% it's left with either 0.5 or 0 for true and false and increase by 1 a single
-% one (either is OK), if we add the two values, the combinations are these:
+% Divide each separated bit (band does return integers) by SelectedBit and
+% multiply by 0.5, so it's left with either 0.5 or 0 for true and false and
+% increase by 1 a single one (either is OK), if we add the two values, the
+% combinations are these:
 %
 %   a |  b  |  r
 % ----+-----+-----
@@ -139,8 +140,11 @@ hamming_distance_guard([DBHash | DBTail], [ImgHash | ImgTail]) ->
 %
 % Ah, remember that mnesia queries lack storage :|
 same_bit_to_int(DBHash, ImgHash, SelectedBit) ->
-    A = {'div', {'band', DBHash, SelectedBit}, SelectedBit * 2},
-    B = {'+', 1, {'div', {'band', ImgHash, SelectedBit}, SelectedBit * 2}},
+    A = {'*', {'div', {'band', DBHash, SelectedBit}, SelectedBit}, 0.5},
+    B = {'+', 1, {'*',
+                  {'div',
+                   {'band', ImgHash, SelectedBit}, SelectedBit},
+                  0.5}},
     R = {'+', A, B},
     R2 = {'band', {trunc, R}, {round, R}},
     {'bsr', R2, {'-', R2, 1}}.
