@@ -17,14 +17,15 @@ crawl(Url)->
     sendNewUrls(CrawledUrls,OtherDomainUrls).
 
 crawl(Url,CurrentDomainNotCrawledUrls,CurrentDomainCrawledUrls,OtherDomainUrls,Images, LinkCount) when LinkCount < ?MAX_PAGES_DOMAIN ->
-	Links = web_lib:get_data(Url),
+    Links = web_lib:get_data(Url),
     case Links of
 	    {[], []} ->  {CurrentDomainCrawledUrls,OtherDomainUrls, Images };
 		{WebLinks,NewImages} ->
    CurrentDomainUrls = [ Link || Link <- WebLinks, belongsToDomain(Link,Url)],
    OtherUrls = [ Link || Link <- WebLinks, not belongsToDomain(Link,Url)],
-   % TODO REMOVE DUPLICATES
-   PendingURLs =  CurrentDomainNotCrawledUrls ++ master:removeDuplicatedURLs(CurrentDomainUrls,CurrentDomainCrawledUrls),
+   PendingURLs =  CurrentDomainNotCrawledUrls ++
+                master:removeDuplicatedURLs(CurrentDomainUrls,
+                                            [Url | CurrentDomainCrawledUrls ++ CurrentDomainNotCrawledUrls]),
 
    case PendingURLs of
         [Head | Tail] ->
@@ -36,7 +37,7 @@ crawl(Url,CurrentDomainNotCrawledUrls,CurrentDomainCrawledUrls,OtherDomainUrls,I
                    {[Url | CurrentDomainCrawledUrls], OtherDomainUrls ++ OtherUrls, Images ++ NewImages }
            after
                0 ->
-                   crawl(Head,Tail,[Head | CurrentDomainCrawledUrls], OtherDomainUrls ++ OtherUrls, Images ++ NewImages, LinkCount + 1)
+                   crawl(Head,Tail,[Url | CurrentDomainCrawledUrls], OtherDomainUrls ++ OtherUrls, Images ++ NewImages, LinkCount + 1)
            end;
         _ ->
             {[Url | CurrentDomainCrawledUrls], OtherDomainUrls ++ OtherUrls, Images ++ NewImages }

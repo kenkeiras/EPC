@@ -46,15 +46,31 @@ getImages(URLs) ->
 % Removes duplicated URLs from incoming ones
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 removeDuplicatedURLs(URLsToAdd, ProcessedURLs) ->
-	[URL || URL <- URLsToAdd, not lists:any(fun(ProcessedURL) -> ProcessedURL == URL end, ProcessedURLs)].
-
+	removeDuplicatedURLs([URL || URL <- URLsToAdd, not lists:any(fun(ProcessedURL) -> ProcessedURL == URL end, ProcessedURLs)]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Removes URLs already in databse
+% Removes duplicated URLs from incoming ones
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+removeRepeatedInList(URLs) ->
+    removeRepeatedInList(URLs, []).
+
+removeRepeatedInList([H | T], Acc) ->
+    case lists:member(H, Acc) of
+        true ->
+            removeRepeatedInList(T, Acc);
+        false ->
+            removeRepeatedInList(T, [H | Acc])
+    end;
+
+removeRepeatedInList([], Acc) ->
+    Acc.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Removes URLs already in database
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 removeDuplicatedURLs(URLs) ->
-	[URL || URL <- URLs, not epc_dba:checkURL(URL)].
-	
+        UniqURLs = removeRepeatedInList(URLs),
+        [URL || URL <- UniqURLs, not epc_dba:checkURL(URL)].
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Creates slaves to crawl URLs if we have available slots
