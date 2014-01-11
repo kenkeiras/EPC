@@ -2,7 +2,7 @@
 -export([search/3]).
 
 -define(EXPECTED_FORM, "multipart/form-data;").
--define(THRESHOLD, 1000).
+
 -define(MAX_RESULTS, 20).
 
 separateImageAndData(ImageBlock) ->
@@ -32,12 +32,12 @@ showResults(R) ->
 
 showResults([], Acc, _) ->
     %% Join the results with the separator
-    "[\"" ++ string:join(Acc, "\",\"") ++ "\"]";
+    "[\"" ++ string:join(lists:reverse(Acc), "\",\"") ++ "\"]";
 
 showResults(_, Acc, 0) ->
     showResults([], Acc, 0);
 
-showResults([{Url, _, _, _, _, _, _, _, _, _} | T], Acc, ResultsToGo) ->
+showResults([Url | T], Acc, ResultsToGo) ->
     showResults(T, [Url | Acc], ResultsToGo - 1).
 
 
@@ -84,7 +84,7 @@ search(SessionID, Env, Input) ->
                             [ImageBlock] = InterestingBlocks,
                             {_Head, Image} = separateImageAndData(ImageBlock),
                             Hash = phash:hash(Image),
-                            Results = epc_dba:get_by_simhash(Hash, ?THRESHOLD),
+                            Results = epc_dba:get_by_simhash(Hash),
                             mod_esi:deliver(SessionID, showResults(Results))
                     end
             end
