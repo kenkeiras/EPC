@@ -4,16 +4,6 @@
 -define(EXPECTED_FORM, "multipart/form-data;").
 -define(THRESHOLD, 1000).
 -define(MAX_RESULTS, 20).
--define(HEADER, "<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset='utf-8' />
-    <title>EPC -- Results</title>
-  </head>
-  <body>
-").
--define(FOOTER, "  </body></html>").
-
 
 separateImageAndData(ImageBlock) ->
     Block = string:strip(string:strip(ImageBlock, left, $\r), left, $\n),
@@ -42,15 +32,13 @@ showResults(R) ->
 
 showResults([], Acc, _) ->
     %% Join the results with the separator
-    string:join(Acc, "<br />");
+    "[\"" ++ string:join(Acc, "\",\"") ++ "\"]";
 
 showResults(_, Acc, 0) ->
     showResults([], Acc, 0);
 
 showResults([{Url, _, _, _, _, _, _, _, _, _} | T], Acc, ResultsToGo) ->
-    ResultHTML = io_lib:format("<a href=\"~s\">~s<br /><img src=\"~s\" /></a>",
-                               [Url, Url, Url]),
-    showResults(T, [ResultHTML | Acc], ResultsToGo - 1).
+    showResults(T, [Url | Acc], ResultsToGo - 1).
 
 
 %% @doc Manage search petition from the HTTP daemon
@@ -97,11 +85,7 @@ search(SessionID, Env, Input) ->
                             {_Head, Image} = separateImageAndData(ImageBlock),
                             Hash = phash:hash(Image),
                             Results = epc_dba:get_by_simhash(Hash, ?THRESHOLD),
-                            mod_esi:deliver(SessionID,
-                                            io_lib:format("~s~s~s~n",
-                                                          [?HEADER,
-                                                           showResults(Results),
-                                                           ?FOOTER]))
+                            mod_esi:deliver(SessionID, showResults(Results))
                     end
             end
     end.

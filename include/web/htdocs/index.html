@@ -1,8 +1,12 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset='utf-8'>
     <title>EPC</title>
-  <style type="text/css">
+    <script src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
+    <script src="http://malsup.github.com/jquery.form.js"></script>
+    <script src="js/navigation.js"></script>
+    <style type="text/css">
   	/*!
  * Bootstrap v3.0.3 (http://getbootstrap.com)
  * Copyright 2013 Twitter, Inc.
@@ -28,7 +32,7 @@
         </div>
         <div class="navbar-collapse collapse">
           <ul class="nav navbar-nav">
-            
+
           </ul>
         </div><!--/.nav-collapse -->
       </div>
@@ -48,12 +52,13 @@
 
 
   	<div class="container">
-      <form   action="/imgsearch/httpd_search:search" enctype="multipart/form-data" method="POST" class="form-signin" role="form">
+      <form action="/imgsearch/httpd_search:search" enctype="multipart/form-data" method="POST" class="form-signin" role="form" id='submit-form'>
         <h2 class="form-signin-heading">Select Image file.</h2>
        	<input type="file" name="image" /><br />
-        <input type="submit"  class="btn btn-lg btn-primary btn-block" />
+        <input type="submit"  class="btn btn-lg btn-primary btn-block image-poster" />
       </form>
-    </div> 
+      <div class="results"></div>
+    </div>
 
   </body>
 </html>
