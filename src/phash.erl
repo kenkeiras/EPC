@@ -60,7 +60,7 @@ encode(Msg) ->
 
 %% pHash port decoder
 decode(Data) ->
-     Data.
+     binary:list_to_bin(Data). % WE WANT THE BINARY REPRESENTATION TO PERFORM HAMMING DISTANCE
 
 
 %% pHash port controller loop
