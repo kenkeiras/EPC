@@ -20,11 +20,17 @@
         }
     }
 
+    function ReturnToMain(event){
+        $('.results').fadeOut();
+        $('form').fadeIn();
+    }
+
     function initialize(){
         $('form').ajaxForm({
             success: AjaxShowImages,
             dataType: "json"
         });
+        $('.navbar-brand').click(ReturnToMain);
     }
 
     $(document).ready(initialize);
