@@ -13,7 +13,8 @@ init(Url) ->
 
 crawl(Url)->
     {CrawledUrls, OtherDomainUrls, Images} = crawl(Url,[],[],[],[], 0),
-    indexImages(Images),
+    NotIndexedImages = [ Image || Image <- Images, epc_dba:get_im(Image) == not_found],
+    indexImages(NotIndexedImages),
     sendNewUrls(CrawledUrls,OtherDomainUrls).
 
 crawl(Url,CurrentDomainNotCrawledUrls,CurrentDomainCrawledUrls,OtherDomainUrls,Images, LinkCount) when LinkCount < ?MAX_PAGES_DOMAIN ->
