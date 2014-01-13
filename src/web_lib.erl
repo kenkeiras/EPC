@@ -31,8 +31,14 @@ parseResponse(URL, ResponseHeaders, ResponseBody) ->
 	case lists:keyfind("content-type", 1, ResponseHeaders) of
 		{"content-type", ContentType} ->
 			case string:str(ContentType, "text/html") of % check that we have a web page
-				0 -> 
-					{[], []};
+				0 ->
+                                        %% If it's a image, simply return the URL
+                                        case string:str(ContentType, "image/") of
+                                            0 ->
+                                                {[], []};
+                                            _ ->
+                                                {[], [URL]}
+                                        end;
 				_ ->
 					ParsedData = mochiweb_html:parse(ResponseBody),
 					Anchors = crawl_for(<<"a">>, ParsedData, []),
