@@ -5,7 +5,7 @@
 %% @reviewer Laura Castro <laura.castro@gmail.com>
 
 -module(web_lib).
--export([get_data/1]).
+-export([get_data/1, downloadImage/1]).
 
 -include_lib("xmerl/include/xmerl.hrl").
 -export([add_domain/2]).
@@ -42,9 +42,7 @@ parseResponse(URL, ResponseHeaders, ResponseBody) ->
 					LinkURLs = filter_second_by(<<"href">>, Anchors) ++ filter_second_by(<<"src">>, Iframes) ++ filter_second_by(<<"src">>, Frames),
 					ImageURLs = filter_second_by(<<"src">>, ImageTags),
 					ImageURLsAbs = relative_to_abs(ImageURLs, URL),
-					Images = [{ImageURL, Image} || {ImageURL, Image} <- [{ImageURL, downloadImage(ImageURL)} || ImageURL <- ImageURLsAbs], Image =/= noImage],
-					{relative_to_abs(LinkURLs, URL), Images}
-					
+					{relative_to_abs(LinkURLs, URL), ImageURLsAbs}
 			end;
 		_ -> 
 			{[], []}

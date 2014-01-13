@@ -23,8 +23,8 @@ addToIndex(ImageUrl, Perception) ->
 
 
 %% Main function
-indexImage({ImageURL, Image}) ->
-    indexer ! {self(), {index, {ImageURL, Image}}}.
+indexImage(ImageURL) ->
+    indexer ! {self(), {index, ImageURL}}.
 
 %% Stop indexer service
 stop() ->
@@ -34,10 +34,15 @@ stop() ->
 %% indexing loop
 indexer_loop() ->
     receive
-        {_From, {index, {ImageURL, Image}}} ->
-            Perception = extractPerception(Image),
-            io:format("Url: ~p~nPerception: ~p~n", [ImageURL, Perception]),
-            addToIndex(ImageURL, Perception),
+        {_From, {index, ImageURL}} ->
+            Image = web_lib:downloadImage(ImageURL),
+            if Image =/= noImage ->
+                    Perception = extractPerception(Image),
+                    io:format("Url: ~p~nPerception: ~p~n", [ImageURL, Perception]),
+                    addToIndex(ImageURL, Perception);
+               true ->
+                    ok
+            end,
             indexer_loop();
         stop ->
             ok
