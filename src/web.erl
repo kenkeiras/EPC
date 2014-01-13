@@ -20,6 +20,8 @@ init() ->
                                     {directory_index, ["index.html"]},
                                     {erl_script_alias, {"/imgsearch",
                                                         [httpd_search]}},
+                                    {erl_script_alias, {"/stats",
+                                                        [httpd_stats]}},
                                     {error_log, ?ERROR_LOG_FILE}
                                    ]),
     Pid.

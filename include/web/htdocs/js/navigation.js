@@ -1,6 +1,7 @@
 (function(){
 
     var SEARCH_URL = "/imgsearch/httpd_search:search";
+    var STATS_URL = "/stats/httpd_stats:stats";
 
     function AjaxShowImages(data){
         $('form').fadeOut();
@@ -31,6 +32,11 @@
             dataType: "json"
         });
         $('.navbar-brand').click(ReturnToMain);
+        $.get(STATS_URL, "", (function(data, textStatus, jqHXR){
+            console.log(data);
+            $('.stats').html("Crawled URLs: " + data['crawled_urls'] +
+                             " | Indexed Images: " + data['indexed_images']);
+        }), "json");
     }
 
     $(document).ready(initialize);

@@ -1,6 +1,8 @@
 -module(epc_dba).
 -include_lib("stdlib/include/qlc.hrl").
--export([test/0, install/1, uninstall/1, start/1, stop/1, put_im/2, get_im/1, get_by_hash/1, get_by_simhash/1, clear/0]).
+-export([test/0, install/1, uninstall/1, start/1, stop/1, put_im/2, get_im/1,
+         get_by_hash/1, get_by_simhash/1, clear/0, get_crawled_url_count/0,
+         get_indexed_image_count/0]).
 
 -export([hammingDistance/2]). % Just for testing reasons
 
@@ -129,6 +131,13 @@ get_by_simhash(Hash) ->
     
     [URL || {URL, _} <- Val].
 
+% @doc Return the number of crawled urls
+get_crawled_url_count() ->
+    mnesia:table_info(epc_crawled_urls, size).
+
+% @doc Return the number of images in the table
+get_indexed_image_count() ->
+    mnesia:table_info(epc_images, size).
 
 clear() ->
 	mnesia:clear_table(epc_images).
