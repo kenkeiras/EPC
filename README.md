@@ -20,6 +20,12 @@ Install
     sudo chmod 766 phash_port
     cd ..
 
+#### Install the HTTP client port
+
+    cd priv/
+    gcc ../include/http_get.c -lcurl -o http_get.o
+    cd ..
+
 ###Compile the files
 
     erl -make
