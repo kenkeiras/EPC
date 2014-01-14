@@ -20,10 +20,14 @@ get_data(Client, URL) ->
     % {error,{failed_connect,[{to_address,{"www.asdfasdf.es", 80}}, {inet,[inet],nxdomain}]}}
     Response = http_get:request(Client, URL),
     case Response of
-	{ok, {_ResponseCode, ResponseHeaders, ResponseBody}} -> 
-		parseResponse(URL, ResponseHeaders, ResponseBody);
-	_ -> 
-		{[], []}		
+	{ok, {_ResponseCode, ResponseHeaders, ResponseBody}} ->
+		try parseResponse(URL, ResponseHeaders, ResponseBody) of
+                    {X, Y} -> {X, Y}
+                catch
+                    _:_ -> {[], []}
+                end;
+	_ ->
+		{[], []}
     end.
 
 
