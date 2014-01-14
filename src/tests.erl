@@ -12,6 +12,7 @@ test1()->
     master:getImages(["http://elpais.com/"]).
 
 test()->
+	web_lib:init(),
     master:init(),
     indexer:start(),
     phash:start(),

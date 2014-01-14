@@ -1,7 +1,7 @@
 -module(epc_slave).
 -export([init/1]).
 
--define(MAX_PAGES_DOMAIN, 20).
+-define(MAX_PAGES_DOMAIN, 100).
 
 init(Url) ->
     % Stop when master is done
