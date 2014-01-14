@@ -16,7 +16,7 @@
 %% Internal Exports
 -export([loop/3, removeDuplicatedURLs/2, printList/1]).
 
--define(SLAVE_LIMIT, 10).
+-define(SLAVE_LIMIT, 50).
 
 -define(PENDING_URLS_LIMIT, 500).
 

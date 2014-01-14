@@ -38,7 +38,7 @@ crawl(Url,CurrentDomainNotCrawledUrls,CurrentDomainCrawledUrls,OtherDomainUrls,I
                    {[Url | CurrentDomainCrawledUrls], OtherDomainUrls ++ OtherUrls, Images ++ NewImages }
            after
                0 ->
-                   crawl(Head,Tail,[Url | CurrentDomainCrawledUrls], OtherDomainUrls ++ OtherUrls, Images ++ NewImages, LinkCount + 1)
+                   crawl(Head,sets:to_list(sets:from_list(Tail)),sets:to_list(sets:from_list([Url | CurrentDomainCrawledUrls])), sets:to_list(sets:from_list(OtherDomainUrls ++ OtherUrls)), sets:to_list(sets:from_list(Images ++ NewImages)), LinkCount + 1)
            end;
         _ ->
             {[Url | CurrentDomainCrawledUrls], OtherDomainUrls ++ OtherUrls, Images ++ NewImages }
