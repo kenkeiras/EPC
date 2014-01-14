@@ -18,7 +18,7 @@
 
 -define(SLAVE_LIMIT, 50).
 
--define(PENDING_URLS_LIMIT, 100).
+-define(PENDING_URLS_LIMIT, 500).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

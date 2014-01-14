@@ -36,12 +36,13 @@ indexer_loop() ->
     receive
         {_From, {index, ImageURL}} ->
             Image = web_lib:downloadImage(ImageURL),
-            if Image =/= noImage ->
+            case Image of
+            	noImage -> ok;
+            	_ ->
                     Perception = extractPerception(Image),
-                    io:format("Url: ~p~nPerception: ~p~n", [ImageURL, Perception]),
-                    addToIndex(ImageURL, Perception);
-               true ->
-                    ok
+                    %io:format("Url: ~p~nPerception: ~p~n", [ImageURL, Perception]),
+                    addToIndex(ImageURL, Perception)
+
             end,
             indexer_loop();
         stop ->
