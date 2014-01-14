@@ -42,6 +42,9 @@ encode(Msg) ->
 
 
 %% @TODO retrieve real return code
+process_headers([]) ->
+    [];
+
 process_headers(Headers) ->
     Lines = lists:nthtail(1, lists:filter(fun (X) -> length(X) > 0 end,
                                           string:tokens(Headers, [$\n, $\r]))),
