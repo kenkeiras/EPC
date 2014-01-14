@@ -18,7 +18,7 @@ get_data(Client, URL) ->
     % {_, { _, _, Data}} = httpc:request(URL)
     % This can cause web_lib to throw a "no match" exception:
     % {error,{failed_connect,[{to_address,{"www.asdfasdf.es", 80}}, {inet,[inet],nxdomain}]}}
-    Response = httpc:request(URL),
+    Response = http_get:request(Client, URL),
     case Response of
 	{ok, {_ResponseCode, ResponseHeaders, ResponseBody}} -> 
 		parseResponse(URL, ResponseHeaders, ResponseBody);
