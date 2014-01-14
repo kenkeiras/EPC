@@ -5,16 +5,16 @@
 %% @reviewer Laura Castro <laura.castro@gmail.com>
 
 -module(web_lib).
--export([get_data/1, downloadImage/1]).
+-export([get_data/2, downloadImage/2]).
 
 -include_lib("xmerl/include/xmerl.hrl").
 -export([add_domain/2]).
 
 %% @doc Returns a list of tuples containin links and images.
 %%      Example url = "http://www.youtube.com/{relative}"
-%% @spec get_data(URL :: string()) -> {Links :: string(), Images :: string()}
-get_data(URL) ->
-    inets:start(),
+%% @spec get_data(Client, URL :: string()) -> {Links :: string(), Images :: string()}
+get_data(Client, URL) ->
+    io:format("-> ~p~n", [URL]),
     % {_, { _, _, Data}} = httpc:request(URL)
     % This can cause web_lib to throw a "no match" exception:
     % {error,{failed_connect,[{to_address,{"www.asdfasdf.es", 80}}, {inet,[inet],nxdomain}]}}
@@ -55,9 +55,10 @@ parseResponse(URL, ResponseHeaders, ResponseBody) ->
 	end.
 			
 
-downloadImage(URL) ->
+
+downloadImage(URL, Client) ->
 	ImageTypes = ["image/jpg", "image/jpeg", "image/png"], % IMPORTANT NOTE, AS FAR AS I KNOW PHASH ONLY SUPPORTS JPEGs AND PNGs
-	Response = httpc:request(URL),
+	Response = http_get:request(Client, URL),
 	case Response of
 		{ok, {_ResponseCode, ResponseHeaders, ResponseBody}} ->
 			case lists:keyfind("content-type", 1, ResponseHeaders) of

@@ -5,7 +5,7 @@
 -module(http_get).
 -export([client/0, request/2]).
 
--export([http_get/0]).
+-export([http_get/1]).
 
 % Machine endianness
 -define(ENDIANNESS, little).
@@ -18,12 +18,13 @@
 
 %% Create a HTTP client
 client() ->
-    spawn(?MODULE, http_get, []).
+    spawn(?MODULE, http_get, [self()]).
 
 %% Client initialization
-http_get() ->
+http_get(Master) ->
     process_flag(trap_exit, true),
-    Port = open_port({spawn, ?HTTP_GET_BINARY_PATH}, [stream]),
+    link(Master),
+    Port = open_port({spawn, ?HTTP_GET_BINARY_PATH}, [{packet, 4}]),
     loop(Port).
 
 %% Client calling
@@ -34,24 +35,10 @@ request(Client, URL) ->
             Data
     end.
 
-%% Create a list of zeros with the given length
-zeros(Num) when Num > 0 ->
-    [0 | zeros(Num - 1)];
-
-zeros(_) ->
-    [].
-
-
-%% Pad a list appending 0's until it reaches the given length
-pad(List, Length) ->
-    lists:append(List, zeros(Length - length(List))).
-
 
 %% HTTP Get port encoder
 encode(Msg) ->
-    lists:append(pad(binary:bin_to_list(
-                       binary:encode_unsigned(length(Msg), ?ENDIANNESS)), 8),
-                 Msg).
+    Msg.
 
 
 %% @TODO retrieve real return code
@@ -70,35 +57,25 @@ process_headers(Headers) ->
               end, Lines).
 
 
-divide_data(RawData) ->
-    HeaderLength = binary:decode_unsigned(
-                     binary:list_to_bin(lists:sublist(RawData, 8)),
-                     ?ENDIANNESS),
-    Header = lists:sublist(RawData, 9, HeaderLength),
-    BodyLength = binary:decode_unsigned(
-                     binary:list_to_bin(lists:sublist(RawData,
-                                                      9 + HeaderLength, 8)),
-                   ?ENDIANNESS),
-    Body = lists:sublist(RawData, 17 + HeaderLength, BodyLength),
-    {process_headers(Header), Body}.
-
-
-%% HTTP Get port decoder
-decode(Data) ->
-    {Headers, Body} = divide_data(Data),
-    {ok, {200, Headers, Body}}.
-
-
-%% pHash port controller loop
+%% HTTP Get port controller loop
 loop(Port) ->
     receive
         {From, {call, Msg}} ->
             Port ! {self(), {command, encode(Msg)}},
             receive
-                {Port, {data, Data}} ->
-                    From ! {self(), {http_get, decode(Data)}}
+                {Port, {data, Headers}} ->
+                    receive
+                        {Port, {data, Body}} ->
+                            From ! {self(), {http_get, {ok, {200,
+                                                             process_headers(Headers),
+                                                             Body}}}}
+                    end
             end,
             loop(Port);
+        {'EXIT', _PID, _} ->
+            ok;
         stop ->
-            ok
+            ok;
+        X ->
+            io:format("~p~n", [X])
     end.

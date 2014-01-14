@@ -12,13 +12,13 @@ init(Url) ->
 
 
 crawl(Url)->
-    {CrawledUrls, OtherDomainUrls, Images} = crawl(Url,[],[],[],[], 0),
+    {CrawledUrls, OtherDomainUrls, Images} = crawl(Url,[],[],[],[], 0, http_get:client()),
     NotIndexedImages = [ Image || Image <- Images, epc_dba:get_im(Image) == not_found],
     indexImages(NotIndexedImages),
     sendNewUrls(CrawledUrls,OtherDomainUrls).
 
-crawl(Url,CurrentDomainNotCrawledUrls,CurrentDomainCrawledUrls,OtherDomainUrls,Images, LinkCount) when LinkCount < ?MAX_PAGES_DOMAIN ->
-    Links = web_lib:get_data(Url),
+crawl(Url,CurrentDomainNotCrawledUrls,CurrentDomainCrawledUrls,OtherDomainUrls,Images, LinkCount, C) when LinkCount < ?MAX_PAGES_DOMAIN ->
+    Links = web_lib:get_data(C, Url),
     case Links of
 	    {[], []} ->  {CurrentDomainCrawledUrls,OtherDomainUrls, Images };
 		{WebLinks,NewImages} ->
@@ -38,14 +38,14 @@ crawl(Url,CurrentDomainNotCrawledUrls,CurrentDomainCrawledUrls,OtherDomainUrls,I
                    {[Url | CurrentDomainCrawledUrls], OtherDomainUrls ++ OtherUrls, Images ++ NewImages }
            after
                0 ->
-                   crawl(Head,Tail,[Url | CurrentDomainCrawledUrls], OtherDomainUrls ++ OtherUrls, Images ++ NewImages, LinkCount + 1)
+                   crawl(Head,Tail,[Url | CurrentDomainCrawledUrls], OtherDomainUrls ++ OtherUrls, Images ++ NewImages, LinkCount + 1, C)
            end;
         _ ->
             {[Url | CurrentDomainCrawledUrls], OtherDomainUrls ++ OtherUrls, Images ++ NewImages }
     end
 
     end;
-crawl(_Url,_CurrentDomainNotCrawledUrls,CurrentDomainCrawledUrls,OtherDomainUrls,Images, _LinkCount) ->
+crawl(_Url,_CurrentDomainNotCrawledUrls,CurrentDomainCrawledUrls,OtherDomainUrls,Images, _LinkCount, _C) ->
     {CurrentDomainCrawledUrls, OtherDomainUrls, Images }.
 
 

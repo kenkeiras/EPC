@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <curl/curl.h>
+#include <arpa/inet.h>
 
 struct pstring {
     size_t size;
@@ -14,10 +15,12 @@ struct pstring {
 
 
 char* read_url(){
-    uint64_t length;
-    if (fread(&length, 8, 1, stdin) != 1){
+    uint32_t length;
+    if (fread(&length, 4, 1, stdin) != 1){
         return NULL;
     }
+    length = ntohl(length);
+
     char *url = malloc(sizeof(char) * (length + 1));
     if (url == NULL){
         return NULL;
@@ -35,19 +38,18 @@ char* read_url(){
 
 void show_result(struct pstring headers, struct pstring body){
     /* Output the headers */
-    uint64_t headers_size = headers.size;
-    fwrite(&headers_size, 8, 1, stdout);
-
+    uint32_t headers_size = htonl(headers.size);
+    fwrite(&headers_size, 4, 1, stdout);
     unsigned int written_head = 0;
     while (written_head < headers.size){
         written_head += fwrite(&(headers.memory[written_head]), sizeof(uint8_t),
                                headers.size - written_head, stdout);
     }
+    fflush(stdout);
 
     /* Output the body */
-    uint64_t body_size = body.size;
-    fwrite(&body_size, 8, 1, stdout);
-
+    uint32_t body_size = htonl(body.size);
+    fwrite(&body_size, 4, 1, stdout);
     unsigned int written_body = 0;
     while (written_body < body.size){
         written_body += fwrite(&(body.memory[written_body]), sizeof(uint8_t),

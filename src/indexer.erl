@@ -32,10 +32,10 @@ stop() ->
 
 
 %% indexing loop
-indexer_loop() ->
+indexer_loop(Client) ->
     receive
         {_From, {index, ImageURL}} ->
-            Image = web_lib:downloadImage(ImageURL),
+            Image = web_lib:downloadImage(ImageURL, Client),
             if Image =/= noImage ->
                     Perception = extractPerception(Image),
                     io:format("Url: ~p~nPerception: ~p~n", [ImageURL, Perception]),
@@ -43,7 +43,7 @@ indexer_loop() ->
                true ->
                     ok
             end,
-            indexer_loop();
+            indexer_loop(Client);
         stop ->
             ok
     end.
@@ -52,7 +52,7 @@ indexer_loop() ->
 %% indexer service
 indexer() ->
     register(indexer, self()),
-    indexer_loop().
+    indexer_loop(http_get:client()).
 
 
 %% Executes on module load, initializes the needed structures
