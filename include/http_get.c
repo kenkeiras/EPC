@@ -8,12 +8,17 @@
 #include <curl/curl.h>
 #include <arpa/inet.h>
 
+/* Variable length strings are length-prefixed. */
 struct pstring {
     size_t size;
     char *memory;
 };
 
-
+/**
+ * Read the URL sent from the erlang side.
+ *
+ * @return The string sent from erlang, must be freed after used.
+ */
 char* read_url(){
     uint32_t length;
     if (fread(&length, 4, 1, stdin) != 1){
@@ -35,7 +40,12 @@ char* read_url(){
     return url;
 }
 
-
+/**
+ * Sends the result back to erlang.
+ *
+ * @param headers The length-prefixed string containg the response headers.
+ * @param body    The lenght-prefixed body containing the response body.
+ */
 void show_result(struct pstring headers, struct pstring body){
     /* Output the headers */
     uint32_t headers_size = htonl(headers.size);
@@ -58,7 +68,17 @@ void show_result(struct pstring headers, struct pstring body){
     fflush(stdout);
 }
 
-
+/**
+ * Makes cURL capable of using strings instead of directly writting to files.
+ * Manages the addition of contents to the string.
+ *
+ * @param ptr The pointer containing the new data.
+ * @param size The size of `ptr' data type.
+ * @param nmemb The number of members in `ptr'.
+ * @param data  The data gathered along the requests.
+ *
+ * @return size_t
+ */
 static size_t write_memory_callback(void *ptr, size_t size,
                                     size_t nmemb, void *data){
 
@@ -75,7 +95,11 @@ static size_t write_memory_callback(void *ptr, size_t size,
     return new_data_size;
 }
 
-
+/**
+ * Returns to erlang the contents of the requested URL.
+ *
+ * @param url The URL to read.
+ */
 void show_url(char *url){
     CURL *curl_handle;
 
